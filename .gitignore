@@ -13,10 +13,12 @@ target/
 .env
 .env.*
 !.env.example
-application.properties
-application.yml
-application-*.properties
-application-*.yml
+# Configuración local que puede contener credenciales.
+# La configuración compartida (application.yml) debe usar variables de entorno.
+**/application-local.properties
+**/application-local.yml
+**/application-secrets.properties
+**/application-secrets.yml
 
 # Logs
 *.log

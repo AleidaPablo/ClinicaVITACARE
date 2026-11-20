@@ -1,0 +1,156 @@
+/* Acabado Soft Medical para módulos; no interviene en el diseño del login. */
+:root {
+  --suave-marino: #203a50;
+  --suave-turquesa: #15978f;
+  --suave-fondo: #f3f7fa;
+  --suave-borde: #e5edf2;
+  --suave-texto: #536b7c;
+  --suave-subtexto: #899ba7;
+  --suave-lavanda: #f0effa;
+  --suave-rosa: #fbf0f2;
+  --suave-cielo: #eaf4fa;
+  --suave-menta: #eaf7f4;
+  --sombra-tarjeta: 0 8px 25px rgb(29 57 76 / 5%);
+}
+
+.estructura-app { background: var(--suave-fondo); color: var(--suave-marino); }
+.barra-lateral-app { background: linear-gradient(180deg, #1c344a 0%, #183247 100%); box-shadow: 4px 0 22px rgb(22 48 68 / 7%); }
+.marca-barra-lateral .marca-icono { border: 1px solid rgb(255 255 255 / 15%); border-radius: 10px; background: linear-gradient(145deg, #1ca79d, #087d77); box-shadow: 0 5px 14px rgb(7 115 107 / 30%); }
+.enlace-lateral { margin: 2px 0; transition: color .18s ease, background .18s ease, transform .18s ease; }
+.enlace-lateral:hover { transform: translateX(2px); background: rgb(255 255 255 / 7%); }
+.enlace-lateral.activo { outline: 1px solid rgb(224 241 246 / 66%); outline-offset: -1px; background: #29475d; box-shadow: inset 3px 0 #37c1b5, 0 5px 16px rgb(9 27 40 / 14%); }
+.enlace-lateral.activo svg { color: #79ded4; }
+.pie-barra-lateral { border-color: rgb(223 239 246 / 13%); }
+.rol-barra-lateral { color: #c8d7e0; }
+.punto-rol-lateral { box-shadow: 0 0 0 4px rgb(46 196 177 / 13%); }
+.contenido-principal-app { background: var(--suave-fondo); }
+.app-topbar { border-color: var(--suave-borde); box-shadow: 0 2px 12px rgb(28 57 78 / 3%); }
+.avatar-usuario { background: linear-gradient(145deg, #ddf3ef, #e5eefb); box-shadow: inset 0 0 0 1px rgb(32 113 126 / 7%); }
+.usuario-barra-superior { padding: 5px 8px 5px 5px; border: 1px solid #edf1f5; border-radius: 30px; background: #fff; }
+.contenido-app { background: radial-gradient(ellipse at 88% 0%, rgb(226 239 250 / 30%), transparent 33%), var(--suave-fondo); }
+.aviso-demostracion { border-color: #d6eee9; background: linear-gradient(90deg, #e9f7f4, #f4faf9); color: #397d78; }
+.aviso-demostracion strong { display: inline-flex; align-items: center; gap: 6px; }
+.aviso-demostracion strong::before { content: '✦'; color: #42a99e; font-size: 12px; }
+
+.encabezado-pagina h1,.bienvenida-copia h1 { color: var(--suave-marino); letter-spacing: -.035em; }
+.encabezado-pagina p { color: #8396a3; }
+.nota-datos-demo { border-left-color: #7bbdb6; border-radius: 0 7px 7px 0; background: linear-gradient(90deg, #eef8f7, #f7fbfa); color: #6a8989; }
+.tarjeta-contenido,.tarjeta-panel,.tarjeta-medico,.tarjeta-perfil-paciente,.recordatorio-panel,.atajos-panel,.tarjeta-estados { border-color: var(--suave-borde); box-shadow: var(--sombra-tarjeta); }
+.tarjeta-contenido,.seccion-panel,.atajos-panel,.tarjeta-estados,.recordatorio-panel { border-radius: 12px; }
+.bienvenida-rol { min-height: 176px; border-radius: 15px; box-shadow: 0 12px 30px rgb(35 104 113 / 5%); }
+.bienvenida-admin { background: linear-gradient(112deg, #e9f6f4 0%, #f7fbfc 58%, #eef1fa 100%); }
+.bienvenida-medico { background: linear-gradient(112deg, #eaf6f7 0%, #f8fbfc 59%, #f4eff9 100%); }
+.bienvenida-paciente { background: linear-gradient(112deg, #eaf7f4 0%, #fafbfc 59%, #f9eef2 100%); }
+.etiqueta-jornada { border-color: #d6e8e8; background: rgb(255 255 255 / 78%); box-shadow: 0 3px 9px rgb(35 84 102 / 4%); }
+.ilustracion-momento { width: 104px; height: 104px; border: 1px solid rgb(255 255 255 / 75%); box-shadow: 0 10px 28px rgb(46 78 95 / 9%); }
+.ilustracion-momento.sol { background: radial-gradient(circle at 45% 40%, #fff9e8, #f5e9cb); color: #cf9d4c; }
+.ilustracion-momento.luna { background: radial-gradient(circle at 42% 38%, #f4f3fc, #e7e8f5); color: #7888b6; }
+.ilustracion-paciente { border: 1px solid rgb(255 255 255 / 85%); background: linear-gradient(145deg, #e3f4ef, #e9eff9); color: #278f87; box-shadow: 0 12px 26px rgb(41 116 112 / 8%); }
+
+.tarjeta-panel { min-height: 88px; border-radius: 12px; box-shadow: 0 5px 17px rgb(25 55 77 / 4%); }
+.tarjeta-panel .icono-panel { width: 41px; height: 41px; border-radius: 13px; background: var(--suave-menta); color: #29968e; }
+.rejilla-panel .tarjeta-panel:nth-child(2):not(.tarjeta-panel-acento) .icono-panel { background: var(--suave-lavanda); color: #7e79ac; }
+.rejilla-panel .tarjeta-panel:nth-child(3) .icono-panel { background: var(--suave-cielo); color: #5d91b2; }
+.rejilla-panel .tarjeta-panel:nth-child(4) .icono-panel { background: var(--suave-rosa); color: #b87788; }
+.tarjeta-panel-acento { border-color: #56aaa4; background: linear-gradient(135deg, #268f87, #197b77); box-shadow: 0 9px 22px rgb(19 129 119 / 15%); }
+.texto-panel small { color: #798e9a; font-size: 9px; }
+.texto-panel strong { font-size: 19px; }
+.cabecera-panel { border-color: #edf1f4; }
+.sobrelinea-panel { color: #90a2ad; letter-spacing: .12em; }
+.tarjeta-cita-panel { transition: background .16s ease, transform .16s ease; }
+.tarjeta-cita-panel:hover { transform: translateX(2px); background: #fbfdfd; }
+.bloque-hora-cita { padding: 7px 8px; border-radius: 8px; background: #f0f7f8; }
+.vacio-panel { min-height: 205px; }
+.ilustracion-vacia { border-radius: 17px; background: linear-gradient(145deg, #e9f7f4, #f0eff9); box-shadow: 0 5px 15px rgb(47 114 116 / 5%); }
+.tarjeta-jornada { border-color: #eee7d7; background: linear-gradient(145deg, #fffaf0, #fff 85%); box-shadow: 0 7px 20px rgb(125 105 62 / 5%); }
+.recordatorio-panel { background: linear-gradient(145deg, #fff, #fbf8fc); }
+.recordatorio-icono { background: var(--suave-lavanda); color: #827daf; }
+.tarjeta-cita-destacada { border-color: #d8e9e7; background: linear-gradient(112deg, #e7f5f2, #f8fbfc 60%, #f4eef7); box-shadow: 0 9px 26px rgb(29 107 107 / 7%); }
+.cita-destacada-icono { box-shadow: 0 6px 18px rgb(23 111 104 / 10%); }
+.boton-cita-destacada { box-shadow: 0 5px 14px rgb(19 127 118 / 16%); transition: transform .16s, box-shadow .16s; }
+.boton-cita-destacada:hover { transform: translateY(-1px); box-shadow: 0 8px 17px rgb(19 127 118 / 19%); }
+.anillo-estados { filter: drop-shadow(0 4px 9px rgb(35 67 83 / 8%)); }
+
+.resumen-modulo-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 11px; }
+.resumen-modulo-card { display: flex; align-items: center; gap: 11px; min-height: 74px; padding: 13px 15px; border: 1px solid var(--suave-borde); border-radius: 11px; background: #fff; box-shadow: 0 5px 17px rgb(25 55 77 / 4%); }
+.resumen-modulo-card .resumen-icono { display: grid; width: 35px; height: 35px; flex: 0 0 35px; place-items: center; border-radius: 11px; background: var(--suave-menta); color: #238d85; }
+.resumen-modulo-card:nth-child(2) .resumen-icono { background: var(--suave-cielo); color: #6194b0; }
+.resumen-modulo-card:nth-child(3) .resumen-icono { background: var(--suave-lavanda); color: #827bad; }
+.resumen-modulo-card>span:last-child { display: grid; gap: 5px; }
+.resumen-modulo-card small { color: #8799a4; font-size: 9px; }
+.resumen-modulo-card strong { color: #2b4658; font-size: 16px; }
+.tarjeta-contenido { overflow: hidden; }
+.barra-pacientes,.barra-modulo { background: linear-gradient(180deg,#fff,#fcfdfe); }
+.pestana-paciente.seleccionado { color: #117f76; border-radius: 7px 7px 0 0; }
+.pestana-paciente b { color: #617d88; background: #edf4f5; }
+.busqueda-pacientes { border-color: #e4ebef; background: #fff; transition: border-color .15s, box-shadow .15s; }
+.busqueda-pacientes:focus-within { border-color: #9bcfc9; box-shadow: 0 0 0 3px rgb(32 151 141 / 8%); }
+.tabla-datos th { background: #f6f9fb; color: #8195a2; letter-spacing: .07em; }
+.tabla-datos td { border-color: #edf2f5; color: #52697a; }
+.tabla-datos tbody tr { transition: background .15s ease; }
+.tabla-datos tbody tr:hover { background: #f8fbfb; }
+.tabla-pacientes .avatar-paciente { width: 30px; height: 30px; background: linear-gradient(145deg,#ddf3ed,#e9effb); color: #328b83; box-shadow: inset 0 0 0 1px rgb(40 120 115 / 5%); }
+.celda-paciente strong { color: #2d485a; font-size: 10px; }
+.etiqueta-estado { padding: 5px 9px; border: 1px solid transparent; border-radius: 20px; font-size: 8px; font-weight: 650; letter-spacing: .01em; }
+.estado-confirmado { border-color: #d0eee6; background: #e5f7f0; color: #168575; }
+.estado-pendiente { border-color: #f2e4ba; background: #fff7df; color: #a87927; }
+.estado-completada { border-color: #dce7f4; background: #edf4fc; color: #5e7fa7; }
+.estado-cancelada { border-color: #f0dce0; background: #fbf0f2; color: #a86877; }
+.etiqueta-rol { border: 1px solid #e4e5f1; background: #f3f2fa; color: #77749f; }
+.status-pending,.estado-pendiente { background: #fff7df; }
+.avatar-medico,.avatar-paciente-grande,.avatar-perfil { box-shadow: 0 4px 12px rgb(34 82 95 / 8%); }
+.tarjeta-medico { border-radius: 12px; box-shadow: 0 7px 20px rgb(25 55 77 / 4%); transition: transform .16s, box-shadow .16s; }
+.tarjeta-medico:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgb(25 55 77 / 9%); }
+.etiqueta-especialidad { padding: 5px 8px; border: 1px solid #dcefeb; border-radius: 20px; background: #eef8f5; color: #26877e; }
+.pie-medico { margin-top: 2px; }
+.fila-expediente { transition: background .16s, padding .16s; }
+.fila-expediente:hover { padding-left: 20px; background: #f8fbfc; }
+.texto-antecedentes { margin: 12px 15px; border: 1px solid #e8e7f2; border-radius: 9px; background: linear-gradient(110deg,#f7f6fc,#fff); }
+.entrada-clinica { border-left-color: #cfe4e2; }
+.punto-linea-tiempo { box-shadow: 0 0 0 4px #eaf6f3, 0 2px 7px rgb(18 131 120 / 20%); }
+.entrada-clinica h3 { color: #2d485a; }
+.opciones-cuenta { padding-top: 4px; }
+.opciones-cuenta label { padding: 9px 10px; border: 1px solid #edf1f4; border-radius: 8px; background: #fbfcfd; }
+.acciones-perfil { background: #fcfdfe; }
+.editor-avatar { background: linear-gradient(100deg,#fff,#fafbfd); }
+.avatar-perfil { border: 3px solid #fff; outline: 1px solid #dcece9; background: linear-gradient(145deg,#dff3ee,#ebeafa); color: #358d86; }
+
+.fondo-modal { background: rgb(24 48 67 / 43%); backdrop-filter: blur(3px); }
+.modal-formulario { border-color: #e7edf1; border-radius: 15px; box-shadow: 0 24px 70px rgb(18 43 60 / 23%); animation: aparecer-modal .18s ease-out; }
+.modal-encabezado { background: linear-gradient(105deg,#fff,#f8fbfc); }
+.modal-encabezado h2 { color: #243f52; letter-spacing: -.02em; }
+.boton-icono { display: grid; place-items: center; transition: transform .15s, background .15s; }
+.boton-icono:hover { transform: rotate(5deg); background: #e8f3f3; color: #21857e; }
+.formulario-modulo input,.formulario-modulo select,.formulario-modulo textarea,.perfil-campos input { border-color: #dfe8ed; border-radius: 8px; background: #fcfdfe; transition: border-color .15s, box-shadow .15s, background .15s; }
+.formulario-modulo input:hover,.formulario-modulo select:hover,.formulario-modulo textarea:hover,.perfil-campos input:hover { border-color: #c9dadd; }
+.formulario-modulo input:focus,.formulario-modulo select:focus,.formulario-modulo textarea:focus,.perfil-campos input:focus { background: #fff; border-color: #83c4bc; box-shadow: 0 0 0 3px rgb(32 151 141 / 10%); }
+.accion-principal { border: 1px solid #13857d; background: linear-gradient(135deg,#199b91,#117a74); box-shadow: 0 4px 11px rgb(16 126 117 / 13%); transition: transform .15s, box-shadow .15s, filter .15s; }
+.accion-principal:hover { transform: translateY(-1px); filter: brightness(1.02); box-shadow: 0 7px 15px rgb(16 126 117 / 18%); }
+.boton-secundario { border-color: #e0e9ed; border-radius: 7px; background: #fff; transition: border-color .15s, background .15s; }
+.boton-secundario:hover { border-color: #c6ddda; background: #f5faf9; }
+.boton-peligro { border-color: #eedde1; background: #fff8f9; color: #a96977; }
+.boton-peligro:hover { background: #fbf0f2; }
+.estado-vacio { color: #8296a2; }
+.estado-vacio strong { color: #405d6e; }
+
+@keyframes aparecer-modal { from { opacity: 0; transform: translateY(6px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 900px) { .resumen-modulo-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 650px) { .resumen-modulo-grid { grid-template-columns: 1fr; gap: 8px; } .resumen-modulo-card { min-height: 65px; } .usuario-barra-superior { padding: 3px; } .bienvenida-rol { box-shadow: 0 8px 22px rgb(35 104 113 / 5%); } }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+.encabezado-seccion-icono { display: flex; align-items: center; gap: 10px; }
+.icono-seccion-lavanda,.icono-seccion-cielo { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border-radius: 10px; background: var(--suave-lavanda); color: #817bab; }
+.icono-seccion-cielo { background: var(--suave-cielo); color: #6292ac; }
+.evento-calendario { padding: 3px 5px!important; border-left: 2px solid #1b948a; background: #e9f6f2!important; color: #257f77!important; }
+.evento-calendario.estado-pendiente { border-color: #d6a447; background: #fff6df!important; color: #9a742e!important; }
+.evento-calendario.estado-completada { border-color: #7796bd; background: #edf3fa!important; color: #597a9e!important; }
+.evento-calendario.estado-cancelada { border-color: #c78390; background: #fbf0f2!important; color: #9c6470!important; }
+.rol-admin { background: var(--suave-lavanda); border-color: #e5e3f1; color: #7774a2; }
+.rol-doctor { background: var(--suave-cielo); border-color: #dbeaf2; color: #5f89a7; }
+.rol-patient { background: var(--suave-menta); border-color: #d7ece5; color: #33867d; }
+.error-campo { display: block; padding: 5px 8px; border-radius: 6px; background: #fbf0f2; color: #a86877; font-size: 9px; font-weight: 500; }
+.fila-expediente .avatar-paciente { background: linear-gradient(145deg,#e2f4ee,#edeafa); }
+.calendario-encabezado { padding: 2px 3px 11px; border-bottom: 1px solid #edf1f4; }
+.dia-calendario { min-height: 93px; transition: background .14s ease, box-shadow .14s ease; }
+.dia-calendario.dia-hoy { box-shadow: inset 0 0 0 1px #8ccdc5; background: #f3fbf9; }
+.etiqueta-jornada svg,.saludo-momento { color: #278d84; }
+@media (max-width:650px) { .dia-calendario { min-height: 70px; } }

@@ -26,6 +26,17 @@
 .formulario-recuperacion .contenedor-entrada > svg { width: 21px; height: 21px; flex-basis: 21px; }
 .formulario-recuperacion .contenedor-entrada input { font-size: 15px; }
 .formulario-recuperacion .boton-iniciar { min-height: 56px; border-radius: 11px; font-size: 15px; }
+.tarjeta-nueva-contrasena .formulario-recuperacion { gap: 18px; }
+.tarjeta-nueva-contrasena .contenedor-entrada { gap: 12px; }
+.tarjeta-nueva-contrasena .alternar-visibilidad { flex: 0 0 32px; width: 32px; height: 32px; }
+.tarjeta-nueva-contrasena .alternar-visibilidad svg { width: 21px; height: 21px; }
+.ayuda-contrasena { margin: 0; color: var(--color-texto); font-size: 13px; line-height: 1.5; }
+.contenido-revisa-correo { display: grid; gap: 24px; }
+.contenido-revisa-correo > p { margin: 0; color: var(--color-texto); font-size: 14px; line-height: 1.55; }
+.enlace-boton-iniciar { width: 100%; text-decoration: none; }
+.texto-reenvio-correo { margin: 0; color: var(--color-texto); font-size: 14px; }
+.texto-reenvio-correo a { color: var(--color-verde-azulado); text-decoration: none; }
+.texto-reenvio-correo a:hover { text-decoration: underline; }
 .enlace-regreso-recuperacion {
   display: inline-flex;
   width: fit-content;

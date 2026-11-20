@@ -3,6 +3,8 @@ import { ProveedorAutenticacion } from '../context/ContextoAutenticacion.jsx'
 import EstructuraAplicacion from '../layouts/EstructuraAplicacion.jsx'
 import InicioSesion from '../pages/InicioSesion.jsx'
 import RecuperarContrasena from '../pages/RecuperarContrasena.jsx'
+import CrearNuevaContrasena from '../pages/CrearNuevaContrasena.jsx'
+import RevisaCorreo from '../pages/RevisaCorreo.jsx'
 import SelectorRolesDemo from '../pages/SelectorRolesDemo.jsx'
 import EspacioDemostracion from '../pages/EspacioDemostracion.jsx'
 import PaginaPanel from '../pages/PaginaPanel.jsx'
@@ -33,6 +35,8 @@ export default function RutasAplicacion() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<InicioSesion />} />
           <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
+          <Route path="/revisa-correo" element={<RevisaCorreo />} />
+          <Route path="/crear-nueva-contrasena" element={<CrearNuevaContrasena />} />
           <Route path="/demo" element={<SelectorRolesDemo />} />
           <Route path="/demo/:role" element={<EspacioDemostracion />}>
             <Route index element={<Navigate to="dashboard" replace />} />

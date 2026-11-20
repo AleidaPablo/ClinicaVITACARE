@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import fotoInicio from '../assets/foto-consulta.png'
 
 function MarcaRecuperacion() {
@@ -24,8 +24,12 @@ function IconoCorreo() {
 }
 
 export default function RecuperarContrasena() {
-  function evitarEnvio(event) {
+  const navigate = useNavigate()
+
+  function gestionarEnvio(event) {
     event.preventDefault()
+    const correo = new FormData(event.currentTarget).get('email')
+    navigate('/revisa-correo', { state: { correo } })
   }
 
   return (
@@ -49,7 +53,7 @@ export default function RecuperarContrasena() {
             <p>Te enviaremos un enlace seguro para recuperar el acceso a tu cuenta.</p>
           </header>
 
-          <form className="formulario-inicio formulario-recuperacion" onSubmit={evitarEnvio}>
+          <form className="formulario-inicio formulario-recuperacion" onSubmit={gestionarEnvio}>
             <div className="campo-formulario">
               <label htmlFor="correo-recuperacion">Correo electrónico</label>
               <div className="contenedor-entrada">

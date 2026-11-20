@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import fotoInicio from '../assets/foto-consulta.png'
+import { validarContrasena } from '../utilidades/validacionesFormulario.js'
 
 function MarcaRestablecimiento() {
   return (
@@ -38,27 +39,23 @@ function IconoVisibilidad({ visible }) {
   )
 }
 
-function validarContrasena(contrasena, confirmacion) {
-  if (contrasena.length < 12 || !/[A-Z]/.test(contrasena) || !/\d/.test(contrasena) || !/[^A-Za-z0-9]/.test(contrasena)) {
-    return 'Usa al menos 12 caracteres, una mayúscula, un número y un símbolo.'
-  }
-  if (contrasena !== confirmacion) return 'Las contraseñas no coinciden.'
-  return ''
-}
-
 export default function CrearNuevaContrasena() {
   const navigate = useNavigate()
   const [contrasena, establecerContrasena] = useState('')
   const [confirmacion, establecerConfirmacion] = useState('')
   const [mostrarContrasena, establecerVisibilidadContrasena] = useState(false)
   const [mostrarConfirmacion, establecerVisibilidadConfirmacion] = useState(false)
-  const [error, establecerError] = useState('')
+  const [errores, establecerErrores] = useState({})
 
   function gestionarEnvio(event) {
     event.preventDefault()
-    const errorValidacion = validarContrasena(contrasena, confirmacion)
-    establecerError(errorValidacion)
-    if (!errorValidacion) navigate('/demo')
+    const erroresValidacion = {}
+    const errorContrasena = validarContrasena(contrasena)
+    if (errorContrasena) erroresValidacion.contrasena = errorContrasena
+    if (!confirmacion) erroresValidacion.confirmacion = 'Confirma tu contraseña.'
+    else if (contrasena !== confirmacion) erroresValidacion.confirmacion = 'Las contraseñas no coinciden.'
+    establecerErrores(erroresValidacion)
+    if (!Object.keys(erroresValidacion).length) navigate('/demo')
   }
 
   return (
@@ -82,10 +79,10 @@ export default function CrearNuevaContrasena() {
             <p>Protege tu cuenta con una contraseña única y segura.</p>
           </header>
 
-          <form className="formulario-inicio formulario-recuperacion" onSubmit={gestionarEnvio}>
+          <form className="formulario-inicio formulario-recuperacion" noValidate onSubmit={gestionarEnvio}>
             <div className="campo-formulario">
               <label htmlFor="nueva-contrasena">Nueva contraseña</label>
-              <div className="contenedor-entrada">
+              <div className={`contenedor-entrada${errores.contrasena ? ' tiene-error' : ''}`}>
                 <IconoCandado />
                 <input
                   id="nueva-contrasena"
@@ -95,7 +92,14 @@ export default function CrearNuevaContrasena() {
                   placeholder="Ingresa tu contraseña"
                   value={contrasena}
                   onChange={(event) => establecerContrasena(event.target.value)}
-                  required
+                  aria-invalid={Boolean(errores.contrasena)}
+                  aria-describedby={errores.contrasena ? 'nueva-contrasena-error' : 'ayuda-contrasena'}
+                  onChange={(event) => {
+                    const valor = event.target.value
+                    establecerContrasena(valor)
+                    const error = valor ? validarContrasena(valor) : errores.contrasena ? 'Ingresa una contraseña.' : ''
+                    establecerErrores((actuales) => ({ ...actuales, contrasena: error, confirmacion: confirmacion ? valor !== confirmacion ? 'Las contraseñas no coinciden.' : '' : actuales.confirmacion ? 'Confirma tu contraseña.' : '' }))
+                  }}
                 />
                 <button
                   className="alternar-visibilidad"
@@ -107,11 +111,12 @@ export default function CrearNuevaContrasena() {
                   <IconoVisibilidad visible={mostrarContrasena} />
                 </button>
               </div>
+              {errores.contrasena && <p className="error-campo" id="nueva-contrasena-error">{errores.contrasena}</p>}
             </div>
 
             <div className="campo-formulario">
               <label htmlFor="confirmar-contrasena">Confirmar contraseña</label>
-              <div className="contenedor-entrada">
+              <div className={`contenedor-entrada${errores.confirmacion ? ' tiene-error' : ''}`}>
                 <IconoCandado />
                 <input
                   id="confirmar-contrasena"
@@ -121,7 +126,13 @@ export default function CrearNuevaContrasena() {
                   placeholder="Ingresa tu contraseña"
                   value={confirmacion}
                   onChange={(event) => establecerConfirmacion(event.target.value)}
-                  required
+                  aria-invalid={Boolean(errores.confirmacion)}
+                  aria-describedby={errores.confirmacion ? 'confirmar-contrasena-error' : undefined}
+                  onChange={(event) => {
+                    const valor = event.target.value
+                    establecerConfirmacion(valor)
+                    establecerErrores((actuales) => ({ ...actuales, confirmacion: valor ? valor !== contrasena ? 'Las contraseñas no coinciden.' : '' : actuales.confirmacion ? 'Confirma tu contraseña.' : '' }))
+                  }}
                 />
                 <button
                   className="alternar-visibilidad"
@@ -133,10 +144,10 @@ export default function CrearNuevaContrasena() {
                   <IconoVisibilidad visible={mostrarConfirmacion} />
                 </button>
               </div>
+              {errores.confirmacion && <p className="error-campo" id="confirmar-contrasena-error">{errores.confirmacion}</p>}
             </div>
 
-            <p className="ayuda-contrasena">Mínimo 12 caracteres. Incluye mayúsculas, números y símbolos.</p>
-            {error && <p className="error-campo" role="alert">{error}</p>}
+            <p className="ayuda-contrasena" id="ayuda-contrasena">Mínimo 8 caracteres. Incluye una mayúscula, un número y un carácter especial.</p>
             <button className="boton-iniciar" type="submit">
               Guardar contraseña <span aria-hidden="true">→</span>
             </button>

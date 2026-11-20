@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import fotoInicio from '../assets/foto-consulta.png'
+import { validarCorreo } from '../utilidades/validacionesFormulario.js'
 
 function MarcaRecuperacion() {
   return (
@@ -25,11 +27,15 @@ function IconoCorreo() {
 
 export default function RecuperarContrasena() {
   const navigate = useNavigate()
+  const [correo, establecerCorreo] = useState('')
+  const [errorCorreo, establecerErrorCorreo] = useState('')
 
   function gestionarEnvio(event) {
     event.preventDefault()
-    const correo = new FormData(event.currentTarget).get('email')
-    navigate('/revisa-correo', { state: { correo } })
+    const error = validarCorreo(correo)
+    establecerErrorCorreo(error)
+    if (error) return
+    navigate('/revisa-correo', { state: { correo: correo.trim() } })
   }
 
   return (
@@ -53,10 +59,10 @@ export default function RecuperarContrasena() {
             <p>Te enviaremos un enlace seguro para recuperar el acceso a tu cuenta.</p>
           </header>
 
-          <form className="formulario-inicio formulario-recuperacion" onSubmit={gestionarEnvio}>
+          <form className="formulario-inicio formulario-recuperacion" noValidate onSubmit={gestionarEnvio}>
             <div className="campo-formulario">
               <label htmlFor="correo-recuperacion">Correo electrónico</label>
-              <div className="contenedor-entrada">
+              <div className={`contenedor-entrada${errorCorreo ? ' tiene-error' : ''}`}>
                 <IconoCorreo />
                 <input
                   id="correo-recuperacion"
@@ -65,9 +71,17 @@ export default function RecuperarContrasena() {
                   autoComplete="email"
                   inputMode="email"
                   placeholder="correo@ejemplo.com"
-                  required
+                  value={correo}
+                  aria-invalid={Boolean(errorCorreo)}
+                  aria-describedby={errorCorreo ? 'correo-recuperacion-error' : undefined}
+                  onChange={(event) => {
+                    const valor = event.target.value
+                    establecerCorreo(valor)
+                    establecerErrorCorreo(valor.trim() ? validarCorreo(valor) : errorCorreo ? 'Escribe tu correo electrónico.' : '')
+                  }}
                 />
               </div>
+              {errorCorreo && <p className="error-campo" id="correo-recuperacion-error">{errorCorreo}</p>}
             </div>
 
             <button className="boton-iniciar" type="submit">

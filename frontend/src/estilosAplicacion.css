@@ -542,6 +542,7 @@
 .estado-vacio,.etiqueta-jornada,.modal-pie,.boton-texto{line-height:1.45}
 .campo-formulario>label{font-size:14px}
 .error-campo{color:#963f50}
+.formulario-modulo [aria-invalid="true"],.perfil-campos [aria-invalid="true"]{border-color:#b42335;background:#fffafb}
 .enlace-demo-inicio{color:#5f7481;font-size:12px}
 .contenedor-entrada input{font-size:15px}
 .boton-iniciar{font-size:15px;min-height:52px;box-shadow:0 7px 17px rgb(13 128 120 / 18%)}

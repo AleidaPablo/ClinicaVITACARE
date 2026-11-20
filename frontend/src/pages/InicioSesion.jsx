@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import fotoInicio from '../assets/foto-consulta.png'
+import { validarContrasena, validarCorreo } from '../utilidades/validacionesFormulario.js'
 
 function Marca() {
   return (
@@ -49,17 +50,11 @@ function VisibilityIcono({ visible }) {
 
 function validarCredenciales(email, password) {
   const errors = {}
-  const correoNormalizado = email.trim()
+  const errorCorreo = validarCorreo(email)
+  if (errorCorreo) errors.email = errorCorreo.replace('Escribe', 'Ingresa')
 
-  if (!correoNormalizado) {
-    errors.email = 'Ingresa tu correo electrónico.'
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoNormalizado)) {
-    errors.email = 'Ingresa un correo electrónico válido.'
-  }
-
-  if (!password) {
-    errors.password = 'Ingresa tu contraseña.'
-  }
+  const errorContrasena = validarContrasena(password)
+  if (errorContrasena) errors.password = errorContrasena
 
   return errors
 }
@@ -143,8 +138,9 @@ export default function InicioSesion({ onLogin }) {
                   aria-invalid={Boolean(erroresCampos.email)}
                   aria-describedby={erroresCampos.email ? 'email-error' : undefined}
                   onChange={(event) => {
-                    setEmail(event.target.value)
-                    if (erroresCampos.email) setFieldErrors((current) => ({ ...current, email: '' }))
+                    const valor = event.target.value
+                    setEmail(valor)
+                    setFieldErrors((current) => ({ ...current, email: valor.trim() ? validarCorreo(valor).replace('Escribe', 'Ingresa') : current.email ? 'Ingresa tu correo electrónico.' : '' }))
                   }}
                 />
               </div>
@@ -164,10 +160,11 @@ export default function InicioSesion({ onLogin }) {
                   placeholder="Ingresa tu contraseña"
                   value={password}
                   aria-invalid={Boolean(erroresCampos.password)}
-                  aria-describedby={erroresCampos.password ? 'password-error' : undefined}
+                  aria-describedby={erroresCampos.password ? 'password-ayuda password-error' : 'password-ayuda'}
                   onChange={(event) => {
-                    setPassword(event.target.value)
-                    if (erroresCampos.password) setFieldErrors((current) => ({ ...current, password: '' }))
+                    const valor = event.target.value
+                    setPassword(valor)
+                    setFieldErrors((current) => ({ ...current, password: valor ? validarContrasena(valor) : current.password ? 'Ingresa tu contraseña.' : '' }))
                   }}
                 />
                 <button
@@ -180,6 +177,7 @@ export default function InicioSesion({ onLogin }) {
                   <VisibilityIcono visible={mostrarContrasena} />
                 </button>
               </div>
+              <p className="ayuda-contrasena" id="password-ayuda">Mínimo 8 caracteres, una mayúscula, un número y un símbolo.</p>
               {erroresCampos.password && <p className="error-campo" id="password-error">{erroresCampos.password}</p>}
             </div>
 

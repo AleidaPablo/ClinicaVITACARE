@@ -19,12 +19,6 @@ export default function EstructuraAplicacion({ user, rutaBase, alCerrarSesion, m
       />
       <div className="contenido-principal-app">
         <BarraSuperior user={user} rutaBase={rutaBase} alPulsarMenu={() => setBarraLateralOpen(true)} />
-        {modoDemostracion && (
-          <div className="aviso-demostracion" role="status">
-            <strong>Modo demostración</strong>
-            <span>Datos ilustrativos; los cambios no se guardan en el servidor.</span>
-          </div>
-        )}
         <main className="contenido-app">{contenidoPagina}</main>
       </div>
     </div>

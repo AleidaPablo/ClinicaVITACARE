@@ -11,9 +11,9 @@ export default function SelectorRolesDemo() {
   return (
     <main className="pagina-selector-demo">
       <div className="tarjeta-selector-demo">
-        <span className="sobretitulo-demo">VITACARE · FRONTEND</span>
-        <h1>Vistas de demostración</h1>
-        <p>Selecciona un rol para recorrer la navegación. Estos perfiles son de ejemplo y no inician una sesión real.</p>
+        <span className="sobretitulo-demo">VITACARE</span>
+        <h1>Explora VITACARE</h1>
+        <p>Elige un perfil para explorar los espacios de trabajo de VITACARE.</p>
         <div className="lista-roles-demo">
           {roles.map((role) => (
             <Link className="tarjeta-rol-demo" key={role.key} to={`/demo/${role.key}/dashboard`}>

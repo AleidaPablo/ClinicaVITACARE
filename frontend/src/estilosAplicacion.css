@@ -423,3 +423,322 @@
 .anillo-estados{background:conic-gradient(#13877d 0 var(--porcentaje-confirmadas),#eeb95a var(--porcentaje-confirmadas) var(--porcentaje-pendientes),#79a6c1 var(--porcentaje-pendientes) var(--porcentaje-completadas),#e2828d var(--porcentaje-completadas) 100%)}
 
 .etiqueta-estado-icono{gap:5px;padding:5px 9px}.etiqueta-estado-icono svg{flex:0 0 auto;stroke-width:2}.acciones-tabla button{display:inline-flex;align-items:center;justify-content:center;gap:5px}.acciones-tabla button svg{flex:0 0 auto;opacity:.82;transition:transform .18s ease,opacity .18s ease}.acciones-tabla button:hover svg{opacity:1;transform:translateY(-1px)}
+
+.estructura-app{font-size:15px}
+.enlace-lateral{font-size:14px}
+.etiqueta-seccion-lateral{font-size:11px}
+.rol-barra-lateral{font-size:13px}
+.migas-pan{font-size:12px}
+.busqueda-global input{font-size:12px}
+.nombre-usuario{font-size:12px}
+.rol-usuario{font-size:11px}
+.encabezado-pagina h1{font-size:27px;font-weight:700}
+.encabezado-pagina p{color:#617888;font-size:14px;line-height:1.55}
+.pila-pagina{gap:22px}
+.accion-principal,.boton-secundario,.boton-peligro,.boton-texto{font-size:14px}
+.accion-principal{box-shadow:0 5px 14px rgb(19 127 118 / 16%);transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+.accion-principal:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 18px rgb(19 127 118 / 20%)}
+.etiqueta-hoy{font-size:12px}
+.encabezado-seccion h2{font-size:17px;font-weight:700}
+.encabezado-seccion p{color:#617888;font-size:13px}
+.tabla-datos{min-width:720px}
+.tabla-datos th{color:#627c8c;font-size:11px;font-weight:700;padding:13px 15px}
+.tabla-datos td{color:#40596a;font-size:13px;padding:14px 15px}
+.celda-paciente strong{font-size:13px}
+.celda-paciente small{font-size:12px}
+.etiqueta-estado{font-size:11px;font-weight:700;padding:6px 10px}
+.acciones-tabla button,.pie-medico button{font-size:13px}
+.filtros-modulo label,.barra-modulo>label:not(.busqueda-pacientes){color:#526b7b;font-size:13px}
+.filtros-modulo input,.filtros-modulo select,.barra-modulo select{font-size:13px}
+.selector-vista button{font-size:13px}
+.texto-secundario{color:#617888;font-size:13px}
+.modal-encabezado h2{font-size:20px}
+.modal-encabezado p{color:#617888;font-size:13px}
+.formulario-modulo label,.perfil-campos label{color:#40596a;font-size:13px}
+.formulario-modulo input,.formulario-modulo select,.formulario-modulo textarea,.perfil-campos input{font-size:14px}
+.boton-secundario,.boton-peligro{font-size:13px;padding:10px 14px}
+.rejilla-detalle span{color:#617888;font-size:12px}
+.rejilla-detalle strong{color:#304b5e;font-size:14px;font-weight:600}
+.mensaje-exito,.error-campo{font-size:12px}
+.estado-vacio{color:#617888;font-size:13px;line-height:1.5}
+.estado-vacio strong{color:#304b5e;font-size:15px}
+.resumen-modulo-card small{color:#617888;font-size:12px}
+.resumen-modulo-card strong{font-size:20px}
+.datos-fila-expediente small,.ultima-visita{color:#617888;font-size:12px}
+.texto-antecedentes{color:#40596a;font-size:14px}
+.enlace-volver{font-size:13px}
+.resumen-clinico span{color:#617888;font-size:12px}
+.resumen-clinico strong{font-size:14px}
+.tarjeta-medico h2{font-size:17px}
+.etiqueta-especialidad{font-size:12px}
+.datos-medico{color:#526b7b;font-size:12px}
+.editor-avatar>span{color:#617888;font-size:12px}
+.opciones-cuenta label{color:#40596a;font-size:13px}
+.texto-panel small,.resumen-modulo-card small{font-weight:600}
+.tarjeta-panel .texto-panel strong{font-size:21px}
+.cabecera-panel h2,.atajos-panel>h2,.tarjeta-estados>h2{font-size:17px}
+.cabecera-panel p{color:#617888;font-size:13px}
+.cabecera-panel>a,.tarjeta-jornada>a,.recordatorio-panel>a{font-size:12px}
+.sobrelinea-panel{color:#637d8b;font-size:10px}
+.bloque-hora-cita strong{font-size:13px}
+.bloque-hora-cita small{font-size:11px}
+.datos-cita-panel strong{font-size:13px}
+.datos-cita-panel small{color:#617888;font-size:12px}
+.tarjeta-jornada h2,.recordatorio-panel h2{font-size:17px}
+.tarjeta-jornada p,.recordatorio-panel p{color:#526b7b;font-size:12px}
+.acceso-rapido strong{font-size:12px}
+.acceso-rapido small{color:#617888;font-size:11px}
+.vacio-panel{color:#617888;font-size:12px}
+.vacio-panel strong{font-size:14px}
+.cita-destacada-copia p,.cita-destacada-copia small{color:#526b7b;font-size:13px}
+.cita-destacada-copia small{font-size:12px}
+.boton-cita-destacada{font-size:13px;padding:11px 14px}
+.fila-actividad strong{font-size:12px}
+.fila-actividad small,.fila-actividad time{color:#617888;font-size:11px}
+.anillo-estados small{font-size:10px}
+.leyenda-estados>span{color:#526b7b;font-size:11px}
+.leyenda-estados strong{font-size:12px}
+.estado-vacio,.etiqueta-jornada,.modal-pie,.boton-texto{line-height:1.45}
+.campo-formulario>label{font-size:14px}
+.error-campo{color:#963f50}
+.enlace-demo-inicio{color:#5f7481;font-size:12px}
+.contenedor-entrada input{font-size:15px}
+.boton-iniciar{font-size:15px;min-height:52px;box-shadow:0 7px 17px rgb(13 128 120 / 18%)}
+@media(max-width:600px){.encabezado-pagina h1{font-size:24px}.encabezado-pagina p{font-size:13px}.tabla-datos{min-width:720px}.etiqueta-estado{font-size:10px}}
+.calendario-encabezado h2{font-size:17px}
+.calendario-encabezado span{color:#617888;font-size:13px}
+.calendario-dias>strong{color:#526b7b;font-size:12px}
+.dia-calendario>span{font-size:12px;font-weight:600}
+.dia-calendario small{font-size:10px}
+@media(max-width:650px){.dia-calendario small{font-size:9px}}
+.entrada-clinica time{color:#617888;font-size:12px}
+.entrada-clinica h3{font-size:16px}
+.panel-paciente{grid-template-columns:minmax(0,1.15fr) minmax(330px,.85fr);gap:20px;align-items:stretch}
+.panel-paciente>.bienvenida-paciente,.panel-paciente>.tarjeta-cita-destacada{grid-column:auto;min-height:270px;border-radius:22px}
+.panel-paciente>.bienvenida-paciente{isolation:isolate;padding:32px 36px;border-color:#d8ece8;background:radial-gradient(ellipse at 84% 25%,rgb(255 255 255 / 78%),transparent 35%),linear-gradient(135deg,#e8f7f3 0%,#f6fafb 55%,#f8f0f4 100%);box-shadow:0 14px 34px rgb(35 79 91 / 6%)}
+.panel-paciente>.bienvenida-paciente::before,.panel-paciente>.bienvenida-paciente::after{position:absolute;z-index:-1;content:"";border:1px solid rgb(255 255 255 / 75%);border-radius:50%;pointer-events:none}
+.panel-paciente>.bienvenida-paciente::before{top:-80px;right:10%;width:240px;height:240px;background:linear-gradient(145deg,rgb(255 255 255 / 28%),rgb(222 242 238 / 38%))}
+.panel-paciente>.bienvenida-paciente::after{right:3%;bottom:-120px;width:270px;height:270px;background:rgb(255 255 255 / 20%)}
+.panel-paciente .bienvenida-copia{max-width:75%}
+.panel-paciente .saludo-momento{margin-bottom:11px;color:#13877f;font-size:13px;letter-spacing:.025em}
+.panel-paciente .bienvenida-copia h1{font-size:clamp(28px,2.5vw,36px);line-height:1.15;letter-spacing:-.045em}
+.panel-paciente .bienvenida-copia p{max-width:440px;margin:12px 0 20px;color:#526e7c;font-size:15px;line-height:1.65}
+.panel-paciente .etiqueta-jornada{padding:10px 14px;border-color:#d5e9e5;background:rgb(255 255 255 / 82%);color:#317b76;font-size:12px;box-shadow:0 5px 14px rgb(42 105 102 / 5%)}
+.panel-paciente .ilustracion-paciente{width:112px;height:112px;flex:0 0 112px;margin:0 2% 0 0;border:1px solid rgb(255 255 255 / 80%);border-radius:38px 50px 42px 52px;background:linear-gradient(145deg,#e0f3ed,#e6edf8);color:#278f87;box-shadow:0 15px 34px rgb(47 119 117 / 11%);transform:rotate(-6deg)}
+.panel-paciente .ilustracion-paciente>svg{width:53px;height:53px;stroke-width:1.65}
+.panel-paciente .ilustracion-paciente span{right:13px;top:10px;font-size:24px}
+.panel-paciente>.tarjeta-cita-destacada{display:flex;align-items:flex-start;justify-content:flex-start;flex-direction:column;gap:12px;padding:27px 29px;border-color:#d8e9e7;background:radial-gradient(circle at 95% 95%,rgb(225 240 248 / 65%),transparent 34%),linear-gradient(145deg,#fff 0%,#f0f8f7 58%,#f6f1f8 100%);box-shadow:0 14px 34px rgb(35 79 91 / 6%)}
+.panel-paciente .cita-destacada-icono{width:48px;height:48px;flex-basis:48px;border-radius:15px;background:linear-gradient(145deg,#fff,#eaf7f4);color:#13877f;box-shadow:0 6px 16px rgb(28 116 107 / 9%)}
+.panel-paciente .cita-destacada-copia{display:grid;gap:8px;width:100%}
+.panel-paciente .cita-destacada-copia .sobrelinea-panel{color:#688592;font-size:11px;letter-spacing:.14em}
+.panel-paciente .cita-destacada-copia h2{color:#203e52;font-size:21px;line-height:1.3}
+.panel-paciente .cita-destacada-copia p{color:#426274;font-size:14px}
+.panel-paciente .cita-destacada-copia small{color:#6b808c;font-size:13px}
+.panel-paciente .cita-destacada-copia .etiqueta-estado{margin-top:3px}
+.panel-paciente .boton-cita-destacada{align-self:flex-start;margin:4px 0 0;padding:12px 16px;border-radius:10px;background:linear-gradient(135deg,#168b81,#11776f);box-shadow:0 7px 16px rgb(19 127 118 / 18%);font-size:13px;font-weight:650;transition:transform .16s ease,box-shadow .16s ease}
+.panel-paciente .boton-cita-destacada:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgb(19 127 118 / 23%)}
+.panel-paciente .destello-cita{right:21px;bottom:15px;color:#74bdb4;opacity:.22;pointer-events:none}
+.panel-paciente>.rejilla-panel,.panel-paciente>.columnas-panel{grid-column:1/-1}
+.panel-paciente>.rejilla-panel{gap:15px}
+.panel-paciente>.rejilla-panel .tarjeta-panel{min-height:96px;border-radius:15px}
+.panel-paciente>.columnas-panel{gap:18px}
+.panel-paciente .atajos-panel,.panel-paciente .recordatorio-panel{border-radius:17px;box-shadow:0 9px 26px rgb(29 57 76 / 5%)}
+@media(max-width:1050px){.panel-paciente{grid-template-columns:minmax(0,1fr) minmax(300px,.85fr)}}
+@media(max-width:860px){.panel-paciente{grid-template-columns:1fr}.panel-paciente>.bienvenida-paciente,.panel-paciente>.tarjeta-cita-destacada{min-height:245px}.panel-paciente>.rejilla-panel,.panel-paciente>.columnas-panel{grid-column:1}}
+@media(max-width:560px){.panel-paciente>.bienvenida-paciente{min-height:230px;padding:26px 22px}.panel-paciente .bienvenida-copia{max-width:calc(100% - 42px)}.panel-paciente .bienvenida-copia h1{font-size:26px}.panel-paciente .bienvenida-copia p{font-size:13px}.panel-paciente .ilustracion-paciente{position:absolute;right:-7px;bottom:-7px;width:70px;height:70px;min-width:70px;opacity:.62}.panel-paciente .ilustracion-paciente>svg{width:36px;height:36px}.panel-paciente>.tarjeta-cita-destacada{min-height:280px;padding:23px}.panel-paciente .cita-destacada-copia h2{font-size:19px}}
+.panel-paciente .saludo-paciente-titulo{display:flex;align-items:center;gap:9px}
+.panel-paciente .saludo-paciente-titulo svg{flex:0 0 auto;color:#26978e;stroke-width:1.9}
+.panel-paciente>.bienvenida-paciente{background:#f5f9fb}
+.panel-paciente>.bienvenida-paciente::before,.panel-paciente>.bienvenida-paciente::after{display:none}
+.panel-paciente>.tarjeta-cita-destacada{background:#f8fafc}
+.panel-rol{gap:22px}
+.panel-admin,.panel-medico{--acento-panel:#178b82;--borde-panel:#dcefeb}
+.panel-medico{--acento-panel:#4887a7;--borde-panel:#dceaf0}
+.panel-admin .bienvenida-rol,.panel-medico .bienvenida-rol{min-height:205px;padding:32px 38px;border-radius:22px;border-color:var(--borde-panel);box-shadow:0 15px 34px rgb(31 66 88 / 7%)}
+.panel-admin .bienvenida-rol{background:linear-gradient(115deg,#e7f6f3 0%,#f5fafb 54%,#edf0fa 100%)}
+.panel-medico .bienvenida-rol{background:linear-gradient(115deg,#e9f5f8 0%,#f5fafb 55%,#f0eef9 100%)}
+.panel-admin .bienvenida-rol::after,.panel-medico .bienvenida-rol::after{position:absolute;top:0;right:0;width:28%;height:100%;background:linear-gradient(135deg,rgb(255 255 255 / 25%),rgb(255 255 255 / 5%));clip-path:polygon(35% 0,100% 0,100% 100%,0 100%);content:"";pointer-events:none}
+.panel-admin .bienvenida-copia,.panel-medico .bienvenida-copia{max-width:68%}
+.panel-admin .saludo-momento,.panel-medico .saludo-momento{margin-bottom:10px;font-size:13px}
+.panel-admin .bienvenida-copia h1,.panel-medico .bienvenida-copia h1{font-size:clamp(29px,2.4vw,35px)}
+.panel-admin .bienvenida-copia p,.panel-medico .bienvenida-copia p{max-width:530px;color:#526d7d;font-size:14px;line-height:1.65}
+.panel-admin .etiqueta-jornada,.panel-medico .etiqueta-jornada{padding:9px 13px;border-radius:12px;color:#3b7478;font-size:12px}
+.panel-admin .ilustracion-momento,.panel-medico .ilustracion-momento{z-index:1;width:128px;height:128px;margin-right:4%;box-shadow:0 14px 31px rgb(41 79 96 / 12%)}
+.panel-admin .rejilla-panel,.panel-medico .rejilla-panel{gap:15px}
+.panel-admin .tarjeta-panel,.panel-medico .tarjeta-panel{min-height:104px;padding:18px;border-radius:16px;box-shadow:0 9px 23px rgb(31 65 84 / 6%)}
+.panel-admin .tarjeta-panel::before,.panel-medico .tarjeta-panel::before{position:absolute;top:0;right:16px;left:16px;height:3px;border-radius:0 0 5px 5px;background:linear-gradient(90deg,var(--acento-panel),#8ed3ca);content:"";opacity:.72}
+.panel-admin .tarjeta-panel .icono-panel,.panel-medico .tarjeta-panel .icono-panel{width:48px;height:48px;flex-basis:48px;border-radius:15px;font-size:20px}
+.panel-admin .tarjeta-panel:nth-child(2) .icono-panel{background:#e9f3fc;color:#5489b0}
+.panel-admin .tarjeta-panel:nth-child(3) .icono-panel{background:#f0eefb;color:#8177b1}
+.panel-admin .tarjeta-panel:nth-child(4) .icono-panel{background:#faeff3;color:#b67989}
+.panel-medico .tarjeta-panel:nth-child(2) .icono-panel{background:#e9f3fc;color:#5489b0}
+.panel-medico .tarjeta-panel:nth-child(3) .icono-panel{background:#f0eefb;color:#8177b1}
+.panel-admin .texto-panel small,.panel-medico .texto-panel small{color:#607b8a;font-size:12px}
+.panel-admin .texto-panel strong,.panel-medico .texto-panel strong{font-size:25px}
+.panel-admin .columnas-panel,.panel-medico .columnas-panel{gap:18px}
+.panel-admin .seccion-panel,.panel-medico .seccion-panel,.panel-admin .atajos-panel,.panel-medico .atajos-panel,.panel-admin .tarjeta-estados,.panel-medico .tarjeta-estados{border-radius:17px;box-shadow:0 10px 28px rgb(31 65 84 / 6%)}
+.panel-admin .cabecera-panel,.panel-medico .cabecera-panel{padding:20px 22px}
+.panel-admin .tarjeta-cita-panel,.panel-medico .tarjeta-cita-panel{padding:15px 11px;margin:0 -6px;border-bottom-color:#edf2f5;border-radius:12px}
+.panel-admin .tarjeta-cita-panel:hover,.panel-medico .tarjeta-cita-panel:hover{background:#f5fafb}
+.panel-admin .bloque-hora-cita,.panel-medico .bloque-hora-cita{background:#eaf5f6;color:#285b69}
+.panel-admin .icono-actividad{background:#e9f5f2;box-shadow:inset 0 0 0 1px #d7eee8}
+.panel-admin .fila-actividad{padding:15px 5px;transition:background .16s ease,padding .16s ease}
+.panel-admin .fila-actividad:hover{padding-right:10px;padding-left:10px;border-radius:12px;background:#f6fafb}
+.panel-admin .anillo-estados{width:112px;height:112px;flex-basis:112px}
+.panel-admin .anillo-estados>div{width:76px;height:76px}
+.panel-admin .atajos-panel,.panel-medico .atajos-panel{padding:19px 20px}
+.resumen-modulo-grid{gap:15px}
+.resumen-modulo-card{position:relative;min-height:92px;padding:17px 19px;border-radius:15px;box-shadow:0 8px 22px rgb(31 65 84 / 5%);transition:transform .17s ease,box-shadow .17s ease,border-color .17s ease}
+.resumen-modulo-card:hover{transform:translateY(-2px);border-color:#c8e2e2;box-shadow:0 12px 25px rgb(31 65 84 / 9%)}
+.resumen-modulo-card .resumen-icono{width:43px;height:43px;flex-basis:43px;border-radius:14px;background:linear-gradient(145deg,#e5f6f1,#eff8fb)}
+.resumen-modulo-card:nth-child(2) .resumen-icono{background:linear-gradient(145deg,#e7f2fb,#f0f5fc)}
+.resumen-modulo-card:nth-child(3) .resumen-icono{background:linear-gradient(145deg,#f0eefb,#f7f1f7)}
+.tarjeta-contenido{border-radius:16px;box-shadow:0 10px 28px rgb(31 65 84 / 6%)}
+.encabezado-seccion{padding:18px 21px}
+.barra-modulo{padding:16px 19px}
+.tabla-datos th{background:linear-gradient(180deg,#f5f9fb,#f9fbfc);color:#587282}
+.tabla-datos td{border-top-color:#edf2f5}
+.tabla-datos tbody tr:hover{background:#f3f9f9}
+.tabla-datos tbody tr:last-child td:first-child{border-bottom-left-radius:12px}
+.etiqueta-estado{box-shadow:inset 0 0 0 1px rgb(27 121 115 / 3%)}
+.tarjeta-medico{padding:20px;border-radius:16px;background:linear-gradient(155deg,#fff 0%,#f9fcfd 100%);box-shadow:0 9px 24px rgb(31 65 84 / 6%)}
+.tarjeta-medico .avatar-medico{width:52px;height:52px;border:3px solid #fff;box-shadow:0 0 0 1px #d8ebe9,0 6px 14px rgb(31 65 84 / 8%)}
+.tarjeta-medico h2{margin-top:12px}
+.datos-medico{gap:10px;padding:14px 0;color:#526b7b;font-size:12px}
+.fila-expediente{padding:17px 20px;transition:background .16s ease,transform .16s ease}
+.fila-expediente:hover{padding-left:24px;background:#f3f9f9}
+.fila-expediente .avatar-paciente{width:42px;height:42px;flex-basis:42px;border:2px solid #fff;box-shadow:0 0 0 1px #dcebea,0 5px 13px rgb(31 65 84 / 8%)}
+.entrada-clinica{padding-bottom:27px}
+.punto-linea-tiempo{width:12px;height:12px;left:-6px;background:linear-gradient(145deg,#20a195,#6dc3b7)}
+.formulario-perfil{overflow:hidden}
+.formulario-perfil .encabezado-seccion{background:linear-gradient(100deg,#f6fbfb,#f8f7fc)}
+.editor-avatar{padding:22px 25px}
+.avatar-perfil{width:78px;height:78px;font-size:22px}
+.perfil-campos{gap:17px;padding:22px 25px}
+.opciones-cuenta{padding:0 25px 21px}
+.opciones-cuenta label{transition:border-color .16s ease,background .16s ease}
+.opciones-cuenta label:hover{border-color:#cfe6e2;background:#f6fbfa}
+.acciones-perfil{padding:17px 25px}
+.fondo-modal{backdrop-filter:blur(5px)}
+.modal-formulario{border-radius:18px}
+.boton-secundario,.boton-peligro,.accion-principal{border-radius:9px}
+@media(max-width:850px){.panel-admin .bienvenida-rol,.panel-medico .bienvenida-rol{padding:27px}.panel-admin .ilustracion-momento,.panel-medico .ilustracion-momento{width:100px;height:100px}}
+@media(max-width:560px){.panel-admin .bienvenida-rol,.panel-medico .bienvenida-rol{min-height:185px;padding:23px}.panel-admin .bienvenida-copia,.panel-medico .bienvenida-copia{max-width:calc(100% - 30px)}.panel-admin .bienvenida-copia h1,.panel-medico .bienvenida-copia h1{font-size:26px}.panel-admin .bienvenida-copia p,.panel-medico .bienvenida-copia p{font-size:13px}.panel-admin .ilustracion-momento,.panel-medico .ilustracion-momento{position:absolute;right:-10px;bottom:-12px;width:67px;height:67px;margin:0;opacity:.72}.panel-admin .tarjeta-panel,.panel-medico .tarjeta-panel{min-height:90px;padding:14px}.panel-admin .tarjeta-panel .icono-panel,.panel-medico .tarjeta-panel .icono-panel{width:40px;height:40px;flex-basis:40px}}
+.estructura-app{color:#203d52}
+.encabezado-pagina h1{font-size:30px}
+.encabezado-pagina p{font-size:15px;color:#526c7e}
+.panel-admin .bienvenida-rol{background:linear-gradient(115deg,#dff4ef 0%,#eef7fc 58%,#ecebfa 100%)}
+.panel-medico .bienvenida-rol{background:linear-gradient(115deg,#e0f2f7 0%,#eff8fb 56%,#e9e9fa 100%)}
+.panel-admin .bienvenida-rol,.panel-medico .bienvenida-rol{border-color:#cfe5e8}
+.panel-admin .bienvenida-copia h1,.panel-medico .bienvenida-copia h1{font-size:clamp(31px,2.6vw,38px)}
+.panel-admin .bienvenida-copia p,.panel-medico .bienvenida-copia p{font-size:15px}
+.panel-admin .ilustracion-momento.sol{background:linear-gradient(145deg,#fff7db,#f5e9c8);color:#bb8c32}
+.panel-admin .ilustracion-momento.luna,.panel-medico .ilustracion-momento.luna{background:linear-gradient(145deg,#e7eafe,#dce4f7);color:#687eae}
+.panel-admin .tarjeta-panel:nth-child(1) .icono-panel,.panel-medico .tarjeta-panel:nth-child(1) .icono-panel{background:linear-gradient(145deg,#dff4ee,#e8f7f7);color:#14877e}
+.panel-admin .tarjeta-panel:nth-child(2) .icono-panel,.panel-medico .tarjeta-panel:nth-child(2) .icono-panel{background:linear-gradient(145deg,#dff0fb,#e9f3fc);color:#4384a9}
+.panel-admin .tarjeta-panel:nth-child(3) .icono-panel,.panel-medico .tarjeta-panel:nth-child(3) .icono-panel{background:linear-gradient(145deg,#e9e8fb,#f0edfa);color:#756eb0}
+.panel-admin .tarjeta-panel:nth-child(4) .icono-panel{background:linear-gradient(145deg,#f8e9f0,#f9eff4);color:#aa6e86}
+.panel-admin .tarjeta-panel-acento,.panel-medico .tarjeta-panel-acento{background:linear-gradient(130deg,#15988e,#08766f);box-shadow:0 12px 25px rgb(19 127 118 / 19%)}
+.panel-paciente .bienvenida-paciente{border-color:#cfe5e9;background:linear-gradient(112deg,#e7f5f3 0%,#f1f7fb 62%,#f4f2fa 100%)}
+.panel-paciente .saludo-paciente-titulo svg{color:#198f87}
+.panel-paciente .etiqueta-jornada{border-color:#cce6e3;background:#fff;color:#277d79}
+.panel-paciente>.tarjeta-cita-destacada{border-color:#cfe4e8;border-left:4px solid #38a69c;background:linear-gradient(135deg,#f3fafb 0%,#eaf5f8 55%,#f0effa 100%)}
+.panel-paciente .cita-destacada-icono{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;border:1px solid #d3e8e8;border-radius:15px;background:linear-gradient(145deg,#fff,#ddf2ee);color:#168c82;box-shadow:0 7px 17px rgb(27 117 111 / 11%)}
+.panel-paciente .cita-destacada-copia h2{font-size:23px}
+.panel-paciente .rejilla-panel .tarjeta-panel:nth-child(1) .icono-panel{background:linear-gradient(145deg,#d9f1eb,#e8f8f5);color:#14877e}
+.panel-paciente .rejilla-panel .tarjeta-panel:nth-child(2) .icono-panel{background:linear-gradient(145deg,#dfedfb,#eaf2fc);color:#4b7fa7}
+.panel-paciente .rejilla-panel .tarjeta-panel:nth-child(3) .icono-panel{background:linear-gradient(145deg,#e8e7fa,#f1effa);color:#7770ad}
+.resumen-modulo-card:nth-child(1){border-color:#cce8e2;background:linear-gradient(120deg,#fff,#f1faf7)}
+.resumen-modulo-card:nth-child(2){border-color:#d2e5f0;background:linear-gradient(120deg,#fff,#f1f7fc)}
+.resumen-modulo-card:nth-child(3){border-color:#e0dcf0;background:linear-gradient(120deg,#fff,#f6f3fb)}
+.resumen-modulo-card small{font-size:13px;color:#536f80}
+.resumen-modulo-card strong{font-size:22px}
+.tarjeta-contenido{border-color:#dce8ee}
+.encabezado-seccion{background:linear-gradient(100deg,#f0f8f9,#f7f7fc)}
+.encabezado-seccion h2{font-size:18px}
+.encabezado-seccion p{font-size:14px;color:#607b8a}
+.tabla-datos th{font-size:12px;color:#476879;background:#eaf3f7}
+.tabla-datos td{font-size:14px;color:#314e62}
+.celda-paciente strong{font-size:14px}
+.celda-paciente small{font-size:13px;color:#617989}
+.acciones-tabla button,.pie-medico button{font-size:14px}
+.etiqueta-estado{font-size:12px}
+.rejilla-medicos .tarjeta-medico:nth-child(3n+1){border-top:3px solid #40a99d}
+.rejilla-medicos .tarjeta-medico:nth-child(3n+2){border-top:3px solid #6ca4c1}
+.rejilla-medicos .tarjeta-medico:nth-child(3n){border-top:3px solid #9990c5}
+.tarjeta-medico h2{font-size:18px}
+.etiqueta-especialidad{font-size:13px}
+.datos-medico{font-size:13px}
+.fila-expediente strong{font-size:14px}
+.fila-expediente small,.ultima-visita{font-size:13px;color:#587483}
+.entrada-clinica h3{font-size:17px}
+.entrada-clinica time{font-size:13px}
+.formulario-modulo label,.perfil-campos label{font-size:14px}
+.formulario-modulo input,.formulario-modulo select,.formulario-modulo textarea,.perfil-campos input{font-size:15px}
+.acciones-perfil .accion-principal,.formulario-modulo .accion-principal{font-size:15px}
+.enlace-lateral.activo{background:linear-gradient(100deg,#1b5962,#294c64);box-shadow:inset 4px 0 #58d0bf,0 7px 17px rgb(8 27 39 / 20%)}
+.enlace-lateral.activo svg{color:#8ce6da}
+.barra-lateral-app .marca-icono{background:linear-gradient(145deg,#32b7a8,#087c76)}
+@media(max-width:600px){.encabezado-pagina h1{font-size:26px}.encabezado-pagina p{font-size:14px}.tabla-datos td{font-size:13px}}
+.ficha-datos-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:18px 20px}
+.dato-ficha{display:grid;align-content:center;gap:6px;min-width:0;min-height:66px;padding:13px 15px;border:1px solid #e8eef2;border-radius:10px;background:#f6f9fb}
+.dato-ficha>span,.dato-perfil-salud>span{color:#647d8d;font-size:12px;font-weight:600}
+.dato-ficha strong,.dato-perfil-salud strong{color:#263f52;font-size:14px;font-weight:600;overflow-wrap:anywhere}
+.dato-ficha.dato-destacado{border-color:#cce7e1;background:#e7f5f1}
+.dato-ficha.dato-destacado strong{color:#117d72}
+.dato-ficha.ancho-completo{grid-column:1/-1}
+.resumen-medico-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;padding:18px 20px 5px}
+.resumen-medico-grid article{display:flex;align-items:center;gap:11px;min-height:75px;padding:12px 14px;border:1px solid #e8eef2;border-radius:11px;background:linear-gradient(120deg,#fff,#f5f9fb)}
+.resumen-medico-grid article.ancho-completo{grid-column:1/-1}
+.resumen-medico-grid article>div{display:grid;gap:5px;min-width:0}
+.resumen-medico-grid article small{color:#647d8d;font-size:12px;font-weight:600}
+.resumen-medico-grid article strong{color:#304b5e;font-size:13px;overflow-wrap:anywhere}
+.resumen-medico-icono{display:grid;place-items:center;width:36px;height:36px;flex:0 0 36px;border-radius:11px;background:#e9effa;color:#7281b4}
+.resumen-medico-icono.alergia{background:#fff2df;color:#ba862b}
+.resumen-medico-icono.padecimiento{background:#e6f5f1;color:#20897f}
+.resumen-medico-icono.medicamento{background:#eaf3fa;color:#5486a5}
+.resumen-medico-icono.familiar{background:#f0edfa;color:#8277ae}
+.resumen-medico-icono.cirugia{background:#f8eef2;color:#a96f85}
+.texto-antecedentes{margin:10px 20px 18px;padding:15px 17px;border-radius:10px;background:#f4f8fa;color:#405c6d;font-size:13px;line-height:1.6}
+.entrada-clinica{padding-bottom:28px}
+.entrada-clinica-cabecera{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}
+.entrada-clinica-cabecera h3{margin:6px 0 13px;font-size:17px}
+.profesional-nota{padding:6px 9px;border:1px solid #d9e8ee;border-radius:18px;background:#f2f8fa;color:#4e7485;font-size:11px;font-weight:600}
+.diagnostico-nota{display:grid;gap:5px;margin:0 0 12px;padding:12px 14px;border-left:3px solid #29a196;border-radius:0 9px 9px 0;background:#eaf6f4}
+.diagnostico-nota small{color:#4f7f7b;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.diagnostico-nota strong{color:#294e5d;font-size:14px}
+.signos-vitales-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:0 0 14px}
+.signos-vitales-grid>div{display:grid;gap:5px;padding:10px;border:1px solid #e1ebf0;border-radius:9px;background:#f7fafc}
+.signos-vitales-grid small{color:#627c8b;font-size:10px}
+.signos-vitales-grid strong{color:#294c60;font-size:14px}
+.signos-vitales-grid strong span{color:#6d8794;font-size:10px;font-weight:500}
+.grupo-campos-clinicos{min-width:0;margin:0;padding:15px 16px;border:1px solid #e3ebef;border-radius:11px;background:#fbfcfd}
+.grupo-campos-clinicos legend{padding:0 7px;color:#3d6676;font-size:13px;font-weight:700}
+.grupo-campos-clinicos .perfil-campos{padding:8px 0 0}
+.dato-perfil-salud{display:grid;align-content:center;gap:6px;padding:10px 12px;border:1px solid #d8ebe6;border-radius:9px;background:#eff8f5}
+.contacto-usuario{display:grid;gap:4px}
+.contacto-usuario strong{color:#39566a;font-size:12px}
+.contacto-usuario small{color:#6b8492;font-size:11px}
+.detalle-expediente{gap:19px}
+.encabezado-expediente{margin-bottom:0}
+.ficha-personal-expediente,.detalle-expediente>.tarjeta-contenido{border-color:#dfe9ee}
+@media(max-width:700px){.signos-vitales-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ficha-datos-grid,.resumen-medico-grid{grid-template-columns:1fr}.dato-ficha.ancho-completo,.resumen-medico-grid article.ancho-completo{grid-column:auto}.entrada-clinica-cabecera{flex-direction:column}.grupo-campos-clinicos{padding:12px}}
+@media(max-width:450px){.signos-vitales-grid{grid-template-columns:1fr 1fr}.ficha-datos-grid{padding:14px}}
+.detalle-cita-panel{color:#607d8c;font-size:11px}
+.cita-destacada-copia small+small{color:#4e6e7e;font-weight:600}
+.grupo-signos-vitales{min-width:0;margin:0;padding:15px 16px;border:1px solid #dce9ed;border-radius:11px;background:linear-gradient(140deg,#f4fafb,#fbf9fd)}
+.grupo-signos-vitales legend{padding:0 7px;color:#3d6676;font-size:13px;font-weight:700}
+.grupo-signos-vitales .campos-dos-columnas{gap:11px}
+.grupo-signos-vitales label{font-size:12px}
+.grupo-signos-vitales input{padding:8px 9px}
+.ficha-datos-grid .dato-ficha:nth-child(3n+1){background:#f4f8fa}
+.ficha-datos-grid .dato-ficha.dato-destacado{background:#e5f4ef}
+.detalle-expediente .encabezado-seccion{background:linear-gradient(100deg,#eff8f7,#f7f7fc)}
+.encabezado-expediente{gap:17px}
+.encabezado-expediente .accion-principal{display:inline-flex;align-items:center;gap:8px}
+.entrada-clinica{margin-left:7px}
+.contacto-usuario{min-width:135px}
+@media(max-width:650px){.contacto-usuario{min-width:110px}.encabezado-expediente{align-items:flex-start;flex-wrap:wrap}}
+.panel-rol .tarjeta-panel.tarjeta-panel-acento .texto-panel small{color:#e8fbf7}
+.panel-rol .tarjeta-panel.tarjeta-panel-acento .texto-panel strong{color:#fff}
+.panel-rol .tarjeta-panel.tarjeta-panel-acento .flecha-panel{color:#d5f7f1}

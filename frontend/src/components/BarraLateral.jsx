@@ -47,7 +47,7 @@ export default function BarraLateral({ user, rutaBase, alCerrarSesion, estaAbier
           </div>
           <button className="enlace-lateral salir-lateral" type="button" onClick={alCerrarSesion}>
             <Icono name="logout" size={17} />
-            <span>{modoDemostracion ? 'Salir de demostración' : 'Cerrar sesión'}</span>
+            <span>{modoDemostracion ? 'Salir' : 'Cerrar sesión'}</span>
           </button>
         </div>
       </aside>

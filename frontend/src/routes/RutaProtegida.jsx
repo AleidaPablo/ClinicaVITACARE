@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation, useOutletContext } from 'react-router-dom'
-import { useAutenticacion } from '../context/ContextoAutenticacion.jsx'
+import { useAutenticacion } from '../context/useAutenticacion.js'
 
 export function RutaProtegida() {
   const { isAuthenticated } = useAutenticacion()

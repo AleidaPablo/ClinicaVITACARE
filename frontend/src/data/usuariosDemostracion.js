@@ -3,14 +3,14 @@ import { NOMBRES_DE_ROLES, ROLES } from '../config/navegacion.js'
 export const USUARIOS_DEMOSTRACION = Object.freeze({
   admin: {
     id: 'demo-admin',
-    name: 'Administración de ejemplo',
+    name: 'Administración',
     email: 'admin.demo@vitacare.invalid',
     role: ROLES.ADMIN,
     roleLabel: NOMBRES_DE_ROLES[ROLES.ADMIN],
   },
   doctor: {
     id: 'demo-doctor',
-    name: 'Dra. de ejemplo',
+    name: 'Dra. Elena Cruz',
     email: 'doctor.demo@vitacare.invalid',
     role: ROLES.DOCTOR,
     roleLabel: NOMBRES_DE_ROLES[ROLES.DOCTOR],
@@ -18,7 +18,7 @@ export const USUARIOS_DEMOSTRACION = Object.freeze({
   },
   patient: {
     id: 'demo-patient',
-    name: 'Paciente de ejemplo',
+    name: 'Lucía Hernández',
     email: 'patient.demo@vitacare.invalid',
     role: ROLES.PATIENT,
     roleLabel: NOMBRES_DE_ROLES[ROLES.PATIENT],

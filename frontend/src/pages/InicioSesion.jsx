@@ -211,7 +211,7 @@ export default function InicioSesion({ onLogin }) {
               {estaEnviando ? <><span className="indicador-carga" aria-hidden="true" /> Iniciando sesión...</> : <>Entrar al sistema <span aria-hidden="true">→</span></>}
             </button>
           </form>
-          <p className="enlace-demo-inicio">¿Quieres recorrer la interfaz? <Link to="/demo">Abrir demostración por roles</Link></p>
+          <p className="enlace-demo-inicio">¿Quieres recorrer la interfaz? <Link to="/demo">Explorar perfiles</Link></p>
         </div>
       </section>
     </main>

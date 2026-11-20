@@ -1,6 +1,5 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
-
-const AuthContext = createContext(null)
+import { useCallback, useMemo, useState } from 'react'
+import { contextoAutenticacion } from './ContextoAutenticacionCompartido.js'
 
 export function ProveedorAutenticacion({ children }) {
   const [session, setSession] = useState(null)
@@ -21,10 +20,5 @@ export function ProveedorAutenticacion({ children }) {
     clearSession,
   }), [session, establishSession, clearSession])
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-export function useAutenticacion() {
-  const context = useContext(AuthContext)
-  if (!context) throw new Error('useAutenticacion debe utilizarse dentro de ProveedorAutenticacion.')
-  return context
+  return <contextoAutenticacion.Provider value={value}>{children}</contextoAutenticacion.Provider>
 }

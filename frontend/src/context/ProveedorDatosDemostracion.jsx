@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { PACIENTES_DEMOSTRACION } from './data/pacientesDemostracion.js'
-import { USUARIOS_DEMOSTRACION } from './data/usuariosDemostracion.js'
-import { obtenerFechaConDias, obtenerFechaLocal } from './utilidades/fechas.js'
-import { contextoDatosDemostracion } from './context/ContextoDatosDemostracionCompartido.js'
+import { PACIENTES_DEMOSTRACION } from '../data/pacientesDemostracion.js'
+import { USUARIOS_DEMOSTRACION } from '../data/usuariosDemostracion.js'
+import { obtenerFechaConDias, obtenerFechaLocal } from '../utilidades/fechas.js'
+import { contextoDatosDemostracion } from './ContextoDatosDemostracionCompartido.js'
 
 const fechaHoy = obtenerFechaLocal()
 

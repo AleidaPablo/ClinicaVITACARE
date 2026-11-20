@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useNavigate, useParams } from 'react-router-dom'
 import EstructuraAplicacion from '../layouts/EstructuraAplicacion.jsx'
 import { USUARIOS_DEMOSTRACION } from '../data/usuariosDemostracion.js'
-import { ProveedorDatosDemostracion } from '../ContextoDatosDemostracion.jsx'
+import { ProveedorDatosDemostracion } from '../context/ProveedorDatosDemostracion.jsx'
 
 export default function EspacioDemostracion() {
   const { role } = useParams()

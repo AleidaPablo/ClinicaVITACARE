@@ -105,11 +105,6 @@ export default function InicioSesion({ onLogin }) {
     }
   }
 
-  function gestionarRecuperacionContrasena() {
-    setFormError('')
-    setNotice('La recuperación estará disponible cuando conectemos el servicio de autenticación.')
-  }
-
   return (
     <main className="pantalla-inicio">
       <aside
@@ -199,9 +194,9 @@ export default function InicioSesion({ onLogin }) {
                 />
                 <span>Recordar mi sesión</span>
               </label>
-              <button className="boton-texto" type="button" onClick={gestionarRecuperacionContrasena}>
+              <Link className="boton-texto" to="/recuperar-contrasena">
                 ¿Olvidaste tu contraseña?
-              </button>
+              </Link>
             </div>
 
             {errorFormulario && <p className="mensaje-formulario mensaje-error" role="alert">{errorFormulario}</p>}

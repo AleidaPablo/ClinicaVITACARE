@@ -6,6 +6,36 @@
   background: var(--color-blanco);
 }
 
+.boton-texto { text-decoration: none; }
+
+.tarjeta-recuperacion .encabezado-inicio { margin-bottom: 28px; }
+.tarjeta-recuperacion .encabezado-inicio h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(27px, 2.4vw, 36px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.tarjeta-recuperacion .encabezado-inicio p { font-size: 15px; }
+.formulario-recuperacion { gap: 22px; }
+.formulario-recuperacion .campo-formulario > label {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  font-weight: 500;
+}
+.formulario-recuperacion .contenedor-entrada { min-height: 56px; border-radius: 11px; }
+.formulario-recuperacion .contenedor-entrada > svg { width: 21px; height: 21px; flex-basis: 21px; }
+.formulario-recuperacion .contenedor-entrada input { font-size: 15px; }
+.formulario-recuperacion .boton-iniciar { min-height: 56px; border-radius: 11px; font-size: 15px; }
+.enlace-regreso-recuperacion {
+  display: inline-flex;
+  width: fit-content;
+  color: var(--color-verde-azulado);
+  font-size: 14px;
+  text-decoration: none;
+}
+.enlace-regreso-recuperacion:hover { text-decoration: underline; }
+.enlace-regreso-recuperacion:focus-visible { outline: 3px solid rgb(18 128 120 / 32%); outline-offset: 3px; }
+
 .visual-inicio {
   position: relative;
   min-height: 100vh;

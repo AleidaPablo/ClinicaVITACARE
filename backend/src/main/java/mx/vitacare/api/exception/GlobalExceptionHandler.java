@@ -91,10 +91,25 @@ public class GlobalExceptionHandler {
     // 6. Errores del servidor (500)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, HttpServletRequest request) {
+        ex.printStackTrace();
+        String detalle = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(), // 500
                 "Internal Server Error",
-                "Ocurrió un error inesperado en el servidor.",
+                "Error en el servidor: " + detalle,
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(Throwable.class)
+    public ResponseEntity<ErrorResponse> handleThrowable(Throwable ex, HttpServletRequest request) {
+        ex.printStackTrace();
+        String detalle = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(), // 500
+                "Internal Server Error",
+                "Error en el servidor: " + detalle,
                 request.getRequestURI()
         );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);

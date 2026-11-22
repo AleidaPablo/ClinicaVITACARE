@@ -82,6 +82,9 @@ function PaginaLogin() {
       email: payload.sub,
       rol: payload.rol,
       nombre: payload.nombre,
+      id: payload.usuarioId,
+      patientId: payload.patientId,
+      doctorId: payload.doctorId,
     })
 
     localStorage.setItem('token', token)

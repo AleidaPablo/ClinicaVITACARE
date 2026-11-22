@@ -31,44 +31,100 @@ function EstadoCita({ estado }) {
 
 export default function PaginaPanel() {
   const { user, rutaBase, modoDemostracion } = useOutletContext()
-  const { pacientes, citas, medicos, usuarios, expedientes } = useDatosDemostracion()
+  const { pacientes: pacientesDemo, citas: citasDemo, medicos: medicosDemo, usuarios, expedientes } = useDatosDemostracion()
   const momento = obtenerMomentoDelDia()
   const rol = user?.role
-  const citasDeHoy = citas.filter((cita) => cita.date === fechaActual && cita.status !== 'Cancelada')
-  const citasPropias = citas.filter((cita) => (rol !== 'PATIENT' || cita.patientId === (user?.patientId ?? 'P-001')) && (rol !== 'DOCTOR' || cita.doctorId === (user?.doctorId ?? 'M-001')) && cita.status !== 'Cancelada')
-  const proximasCitas = citasPropias.filter((cita) => cita.date >= fechaActual).sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`)).slice(0, 4)
   const nombre = rol === 'ADMIN' ? 'Administración' : user?.name ?? 'Usuario'
   const rolPaciente = rol === 'PATIENT'
 
-  const usaApi = modoDemostracion === false && rol === 'ADMIN'
+  const esModoReal = modoDemostracion === false
+  const usaApi = esModoReal && rol === 'ADMIN'
   const [resumen, setResumen] = useState(null)
   const [cargandoResumen, setCargandoResumen] = useState(usaApi)
   const [errorResumen, setErrorResumen] = useState('')
+  const [citasReales, setCitasReales] = useState([])
+  const [medicosReales, setMedicosReales] = useState([])
+  const [pacientesReales, setPacientesReales] = useState([])
 
   useEffect(() => {
-    if (!usaApi) return undefined
+    if (!esModoReal) return undefined
     let cancelado = false
 
-    async function cargarResumen() {
-      setCargandoResumen(true)
-      setErrorResumen('')
-      try {
-        const { data } = await axiosClient.get('/dashboard/resumen')
-        if (!cancelado) setResumen(data)
-      } catch (error) {
-        if (!cancelado) {
-          setErrorResumen(error.response
-            ? 'No se pudo cargar el resumen del panel.'
-            : 'No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.')
+    async function cargarDatosPanel() {
+      if (usaApi) {
+        setCargandoResumen(true)
+        setErrorResumen('')
+        try {
+          const { data } = await axiosClient.get('/dashboard/resumen')
+          if (!cancelado) setResumen(data)
+        } catch (error) {
+          if (!cancelado) {
+            setErrorResumen(
+              error.response
+                ? 'No se pudo cargar el resumen del panel.'
+                : 'No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.'
+            )
+          }
+        } finally {
+          if (!cancelado) setCargandoResumen(false)
         }
-      } finally {
-        if (!cancelado) setCargandoResumen(false)
+      }
+
+      // Cargar citas reales para médico y paciente
+      try {
+        const [resCitas, resMed, resPac] = await Promise.all([
+          axiosClient.get('/citas', { params: { size: 50 } }).catch(() => ({ data: { content: [] } })),
+          axiosClient.get('/medicos', { params: { size: 50 } }).catch(() => ({ data: { content: [] } })),
+          axiosClient.get('/pacientes', { params: { size: 50 } }).catch(() => ({ data: { content: [] } }))
+        ])
+
+        if (!cancelado) {
+          const mapeadas = (resCitas.data?.content || []).map((c) => {
+            const fechaHora = c.fechaHora ? String(c.fechaHora) : ''
+            return {
+              id: c.id,
+              patientId: c.pacienteId,
+              patientName: c.pacienteNombre,
+              doctorId: c.medicoId,
+              doctorName: c.medicoNombre,
+              date: fechaHora.slice(0, 10),
+              time: fechaHora.length >= 16 ? fechaHora.slice(11, 16) : '09:00',
+              type: c.tipoConsulta || 'Consulta general',
+              reason: c.motivo || '',
+              duration: String(c.duracion || 30),
+              modality: c.modalidad || 'Presencial',
+              location: c.ubicacion || 'Consultorio 1',
+              status: c.estado === 'PENDIENTE' ? 'Pendiente' : c.estado === 'CONFIRMADA' ? 'Confirmada' : c.estado === 'COMPLETADA' ? 'Completada' : 'Cancelada'
+            }
+          })
+          setCitasReales(mapeadas)
+          setMedicosReales((resMed.data?.content || []).map((m) => ({ id: m.id, name: m.nombreCompleto })))
+          setPacientesReales((resPac.data?.content || []).map((p) => ({ id: p.id, name: p.nombreCompleto })))
+        }
+      } catch (err) {
+        console.error('Error al cargar datos reales del panel:', err)
       }
     }
 
-    cargarResumen()
+    cargarDatosPanel()
     return () => { cancelado = true }
-  }, [usaApi])
+  }, [esModoReal, usaApi])
+
+  const citas = esModoReal ? citasReales : citasDemo
+  const pacientes = esModoReal ? pacientesReales : pacientesDemo
+  const medicos = esModoReal ? medicosReales : medicosDemo
+
+  const citasDeHoy = citas.filter((cita) => cita.date === fechaActual && cita.status !== 'Cancelada')
+  const citasPropias = citas.filter(
+    (cita) =>
+      (!rolPaciente || String(cita.patientId) === String(user?.patientId ?? '')) &&
+      (rol !== 'DOCTOR' || String(cita.doctorId) === String(user?.doctorId ?? '')) &&
+      cita.status !== 'Cancelada'
+  )
+  const proximasCitas = citasPropias
+    .filter((cita) => cita.date >= fechaActual)
+    .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
+    .slice(0, 4)
 
   const valorApi = (valor) => (cargandoResumen ? '…' : (valor ?? '—'))
 

@@ -1,5 +1,6 @@
 package mx.vitacare.api.controller;
 
+import mx.vitacare.api.dto.CambioEstadoRequestDTO;
 import mx.vitacare.api.dto.CitaRequestDTO;
 import mx.vitacare.api.dto.CitaResponseDTO;
 import mx.vitacare.api.service.CitaService;
@@ -23,14 +24,34 @@ public class CitaController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
-    public ResponseEntity<Page<CitaResponseDTO>> listar(@PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(citaService.listarPaginadas(pageable));
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
+    public ResponseEntity<Page<CitaResponseDTO>> listar(
+            @RequestParam(required = false) Long pacienteId,
+            @RequestParam(required = false) Long medicoId,
+            @RequestParam(required = false) String estado,
+            @PageableDefault(size = 50) Pageable pageable) {
+        return ResponseEntity.ok(citaService.listarPaginadas(pacienteId, medicoId, estado, pageable));
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'PATIENT')") // El paciente o el admin pueden agendar
+    @PreAuthorize("hasAnyRole('ADMIN', 'PATIENT', 'DOCTOR')")
     public ResponseEntity<CitaResponseDTO> crear(@Valid @RequestBody CitaRequestDTO dto) {
         return new ResponseEntity<>(citaService.crear(dto), HttpStatus.CREATED);
+    }
+
+    @PatchMapping("/{id}/estado")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
+    public ResponseEntity<CitaResponseDTO> cambiarEstado(
+            @PathVariable Long id,
+            @Valid @RequestBody CambioEstadoRequestDTO dto) {
+        return ResponseEntity.ok(citaService.cambiarEstado(id, dto.getEstado()));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+    public ResponseEntity<CitaResponseDTO> actualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody CitaRequestDTO dto) {
+        return ResponseEntity.ok(citaService.actualizar(id, dto));
     }
 }

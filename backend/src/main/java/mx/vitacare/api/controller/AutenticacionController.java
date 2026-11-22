@@ -5,6 +5,8 @@ import mx.vitacare.api.dto.LoginRequest;
 import mx.vitacare.api.dto.RegisterRequest;
 import mx.vitacare.api.model.Rol;
 import mx.vitacare.api.model.Usuario;
+import mx.vitacare.api.repository.MedicoRepository;
+import mx.vitacare.api.repository.PacienteRepository;
 import mx.vitacare.api.repository.RolRepository;
 import mx.vitacare.api.repository.UsuarioRepository;
 import mx.vitacare.api.seguridad.JwtServicio;
@@ -28,17 +30,23 @@ public class AutenticacionController {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final RolRepository rolRepository;
+    private final PacienteRepository pacienteRepository;
+    private final MedicoRepository medicoRepository;
 
     public AutenticacionController(AuthenticationManager authenticationManager,
                                    JwtServicio jwtServicio,
                                    UsuarioRepository usuarioRepository,
                                    PasswordEncoder passwordEncoder,
-                                   RolRepository rolRepository) {
+                                   RolRepository rolRepository,
+                                   PacienteRepository pacienteRepository,
+                                   MedicoRepository medicoRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtServicio = jwtServicio;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.rolRepository = rolRepository;
+        this.pacienteRepository = pacienteRepository;
+        this.medicoRepository = medicoRepository;
     }
 
     @PostMapping("/login")
@@ -55,8 +63,18 @@ public class AutenticacionController {
 
         // 3. Preparamos los datos extra que irán dentro del token (el rol y el nombre)
         Map<String, Object> claims = new HashMap<>();
-        claims.put("rol", usuario.getRol().getNombre()); // Ej: "ADMIN", "DOCTOR", "PATIENT"
+        String rolNombre = usuario.getRol().getNombre();
+        claims.put("rol", rolNombre); // Ej: "ADMIN", "DOCTOR", "PATIENT"
         claims.put("nombre", usuario.getNombreCompleto());
+        claims.put("usuarioId", usuario.getId());
+
+        if ("PATIENT".equals(rolNombre)) {
+            pacienteRepository.findByUsuarioEmail(usuario.getEmail())
+                    .ifPresent(p -> claims.put("patientId", p.getId()));
+        } else if ("DOCTOR".equals(rolNombre)) {
+            medicoRepository.findByUsuarioEmail(usuario.getEmail())
+                    .ifPresent(m -> claims.put("doctorId", m.getId()));
+        }
 
         // 4. Generamos el Token JWT
         String token = jwtServicio.generarToken(usuario.getEmail(), claims);

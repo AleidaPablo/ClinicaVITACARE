@@ -85,7 +85,9 @@ public class Usuario implements UserDetails {
     @Override
     public boolean isEnabled() { return activo; }
 
-    // --- GETTERS Y SETTERS MANUALES (Para evitar errores de Maven) ---
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
@@ -101,6 +103,21 @@ public class Usuario implements UserDetails {
     public Boolean getActivo() { return activo; }
     public void setActivo(Boolean activo) { this.activo = activo; }
 
-        public String getTelefono() { return telefono; }
+    public String getTelefono() { return telefono; }
     public void setTelefono(String telefono) { this.telefono = telefono; }
+
+    public String getDepartamento() { return departamento; }
+    public void setDepartamento(String departamento) { this.departamento = departamento; }
+
+    public String getFotoUrl() { return fotoUrl; }
+    public void setFotoUrl(String fotoUrl) { this.fotoUrl = fotoUrl; }
+
+    public LocalDateTime getUltimoAcceso() { return ultimoAcceso; }
+    public void setUltimoAcceso(LocalDateTime ultimoAcceso) { this.ultimoAcceso = ultimoAcceso; }
+
+    public LocalDateTime getCreadoEn() { return creadoEn; }
+    public void setCreadoEn(LocalDateTime creadoEn) { this.creadoEn = creadoEn; }
+
+    public LocalDateTime getActualizadoEn() { return actualizadoEn; }
+    public void setActualizadoEn(LocalDateTime actualizadoEn) { this.actualizadoEn = actualizadoEn; }
 }

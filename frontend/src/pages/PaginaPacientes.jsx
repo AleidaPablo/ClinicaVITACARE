@@ -1,10 +1,9 @@
-
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useOutletContext, useSearchParams } from 'react-router-dom'
+import axiosClient from '../config/axiosClient' 
 import Icono from '../components/Icono.jsx'
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx'
 import ModalFormulario from '../components/ModalFormulario.jsx'
-import { useDatosDemostracion } from '../context/useDatosDemostracion.js'
 import { validarTelefono } from '../utilidades/validacionesFormulario.js'
 
 const pacienteVacio = {
@@ -31,9 +30,16 @@ function iniciales(nombre = '') {
 
 export default function PaginaPacientes({ patientOnly = false }) {
   const { user } = useOutletContext()
-  const { pacientes, establecerPacientes } = useDatosDemostracion()
   const [params, setParams] = useSearchParams()
   const busqueda = params.get('search') ?? ''
+  
+  const [pacientes, setPacientes] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [paginaActual, setPaginaActual] = useState(0)
+  const [totalPaginas, setTotalPaginas] = useState(1)
+  const [totalElementos, setTotalElementos] = useState(0)
+
+  // Estados de UI
   const [filtroEstado, establecerFiltroEstado] = useState('Todos')
   const [modal, establecerModal] = useState(null)
   const [formulario, establecerFormulario] = useState(pacienteVacio)
@@ -41,55 +47,97 @@ export default function PaginaPacientes({ patientOnly = false }) {
 
   const esPaciente = patientOnly || user?.role === 'PATIENT'
 
-  
-function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
-  const texto = String(valor ?? '').trim()
+  useEffect(() => {
+    if (esPaciente) return; // Si es paciente, no traemos toda la lista
 
-  if (nombre === 'name') {
-    if (!texto) return 'Escribe el nombre del paciente.'
-    if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(texto)) {
-      return 'El nombre solo debe contener letras y espacios.'
+    const fetchPacientes = async () => {
+      setCargando(true)
+      try {
+        const response = await axiosClient.get('/pacientes', {
+          params: {
+            page: paginaActual,
+            size: 5,
+            search: busqueda
+          }
+        })
+
+        // Mapeamos el DTO del backend al formato que espera tu interfaz
+        const pacientesMapeados = response.data.content.map(p => {
+          // Calculamos edad a partir de la fecha de nacimiento (si existe)
+          let edad = ''
+          if (p.fechaNacimiento) {
+            const hoy = new Date()
+            const nacimiento = new Date(p.fechaNacimiento)
+            edad = hoy.getFullYear() - nacimiento.getFullYear()
+          }
+
+          return {
+            id: p.id,
+            expediente: `EXP-${String(p.id).padStart(4, '0')}`,
+            name: p.nombreCompleto,
+            email: p.email,
+            phone: p.telefono || '',
+            dateOfBirth: p.fechaNacimiento || '',
+            age: edad,
+            sex: p.sexo || '',
+            maritalStatus: p.estadoCivil || '',
+            occupation: p.ocupacion || '',
+            address: p.direccion || '',
+            bloodType: p.tipoSangre || '',
+            emergencyContact: p.contactoEmergenciaNombre || '',
+            emergencyPhone: p.contactoEmergenciaTelefono || '',
+            insurance: p.tipoSeguro || '',
+            nss: p.nss || '',
+            status: p.activo ? 'Activo' : 'Inactivo',
+            lastVisit: 'Sin visitas'
+          }
+        })
+
+        setPacientes(pacientesMapeados)
+        setTotalPaginas(response.data.totalPages)
+        setTotalElementos(response.data.totalElements)
+      } catch (error) {
+        console.error("Error al cargar pacientes", error)
+      } finally {
+        setCargando(false)
+      }
     }
-  }
 
-  if (nombre === 'phone') {
-    return validarTelefono(valor, true)
-  }
+    fetchPacientes()
+  }, [paginaActual, busqueda, esPaciente])
 
-  if (nombre === 'emergencyPhone') {
-    return validarTelefono(valor)
-  }
+  // --- VALIDACIÓN DEL FORMULARIO ---
+  function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
+    const texto = String(valor ?? '').trim()
 
-  if (nombre === 'age' && texto && (
-    !Number.isFinite(Number(texto)) ||
-    Number(texto) < 0 ||
-    Number(texto) > 120
-  )) {
-    return 'La edad debe estar entre 0 y 120 años.'
-  }
-
-  if (nombre === 'email') {
-    if (!texto) return 'Escribe el correo electrónico.'
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(texto)) {
-      return 'Escribe un correo válido.'
+    if (nombre === 'name') {
+      if (!texto) return 'Escribe el nombre del paciente.'
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(texto)) {
+        return 'El nombre solo debe contener letras y espacios.'
+      }
     }
 
-    if (pacientes.some((paciente) =>
-      paciente.email.toLowerCase() === texto.toLowerCase() &&
-      paciente.id !== pacienteId
-    )) {
-      return 'Ese correo ya está registrado.'
+    if (nombre === 'phone') {
+      return validarTelefono(valor, true)
     }
-  }
 
-  return ''
-}
+    if (nombre === 'emergencyPhone') {
+      return validarTelefono(valor)
+    }
+
+    if (nombre === 'email') {
+      if (!texto) return 'Escribe el correo electrónico.'
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(texto)) {
+        return 'Escribe un correo válido.'
+      }
+    }
+
+    return ''
+  }
 
   function cambiarCampo(evento) {
     const { name, value } = evento.target
-
-    if (['name', 'email', 'phone', 'age', 'emergencyPhone'].includes(name)) {
+    if (['name', 'email', 'phone', 'emergencyPhone'].includes(name)) {
       establecerErrores((actuales) => ({
         ...actuales,
         [name]: validarCampo(name, value)
@@ -97,82 +145,72 @@ function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
     }
   }
 
-  const pacientesVisibles = useMemo(() => pacientes.filter((paciente) => {
-    const autorizadoParaMedico =
-      user?.role !== 'DOCTOR' ||
-      ['P-001', 'P-002', 'P-003'].includes(paciente.id)
-
-    const coincideTexto = `${paciente.id} ${paciente.expediente ?? ''} ${paciente.name} ${paciente.email} ${paciente.phone} ${paciente.nss ?? ''}`
-      .toLocaleLowerCase()
-      .includes(busqueda.trim().toLocaleLowerCase())
-
-    return autorizadoParaMedico &&
-      coincideTexto &&
-      (filtroEstado === 'Todos' || paciente.status === filtroEstado)
-  }), [pacientes, busqueda, filtroEstado, user?.role])
+  // --- FILTRO LOCAL POR ESTADO (El buscador de texto ya lo hace el servidor) ---
+  const pacientesVisibles = useMemo(() => {
+    return pacientes.filter(paciente => {
+      if (filtroEstado === 'Todos') return true;
+      return paciente.status === filtroEstado;
+    })
+  }, [pacientes, filtroEstado])
 
   function abrirFormulario(paciente = null) {
     establecerFormulario(paciente ? { ...paciente } : pacienteVacio)
     establecerErrores({})
-    establecerModal(paciente
-      ? { tipo: 'editar', paciente }
-      : { tipo: 'nuevo' }
-    )
+    establecerModal(paciente ? { tipo: 'editar', paciente } : { tipo: 'nuevo' })
   }
 
-  function guardarPaciente(evento) {
+  // --- GUARDAR PACIENTE EN EL BACKEND ---
+  async function guardarPaciente(evento) {
     evento.preventDefault()
 
     const valores = Object.fromEntries(
       [...new FormData(evento.currentTarget)].map(([nombre, valor]) => [
-        nombre,
-        typeof valor === 'string' ? valor.trim() : valor
+        nombre, typeof valor === 'string' ? valor.trim() : valor
       ])
     )
 
     const erroresFormulario = Object.fromEntries(
-      ['name', 'email', 'phone', 'age', 'emergencyPhone']
-        .map((nombre) => [
-          nombre,
-          validarCampo(nombre, valores[nombre])
-        ])
+      ['name', 'email', 'phone', 'emergencyPhone']
+        .map((nombre) => [nombre, validarCampo(nombre, valores[nombre])])
         .filter(([, mensaje]) => mensaje)
     )
 
     establecerErrores(erroresFormulario)
-
     if (Object.keys(erroresFormulario).length) return
 
-    if (modal.tipo === 'editar') {
-      establecerPacientes((actuales) =>
-        actuales.map((paciente) =>
-          paciente.id === modal.paciente.id
-            ? { ...paciente, ...valores, age: Number(valores.age) || 0 }
-            : paciente
-        )
-      )
-    } else {
-      const siguienteId = `P-${String(Date.now()).slice(-4)}`
+    try {
+      // Armamos el DTO que espera Spring Boot
+      const payload = {
+        usuarioId: modal.tipo === 'editar' ? modal.paciente.id : 2, // OJO: Requiere un usuarioId real (usamos el 2 de prueba)
+        fechaNacimiento: valores.dateOfBirth || null,
+        sexo: valores.sex,
+        estadoCivil: valores.maritalStatus,
+        ocupacion: valores.occupation,
+        direccion: valores.address,
+        tipoSangre: valores.bloodType,
+        contactoEmergenciaNombre: valores.emergencyContact,
+        contactoEmergenciaTelefono: valores.emergencyPhone,
+        tipoSeguro: valores.insurance,
+        nss: valores.nss
+      }
 
-      establecerPacientes((actuales) => [
-        {
-          ...valores,
-          id: siguienteId,
-          age: Number(valores.age) || 0,
-          lastVisit: 'Sin visitas'
-        },
-        ...actuales
-      ])
+      if (modal.tipo === 'editar') {
+        await axiosClient.put(`/pacientes/${modal.paciente.id}`, payload)
+      } else {
+        await axiosClient.post('/pacientes', payload)
+      }
+
+      // Refrescamos la tabla
+      setPaginaActual(0)
+      establecerModal(null)
+      alert("Guardado exitosamente")
+    } catch (error) {
+      alert("Error al guardar: " + (error.response?.data?.mensaje || error.message))
     }
-
-    establecerModal(null)
   }
 
+  // --- VISTA PARA PACIENTES ---
   if (esPaciente) {
-    const paciente = pacientes.find(
-      (elemento) => elemento.id === (user?.patientId ?? 'P-001')
-    ) ?? pacientes[0]
-
     return (
       <div className="pila-pagina">
         <div className="encabezado-pagina">
@@ -181,11 +219,8 @@ function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
             <p>Información de tu atención médica.</p>
           </div>
         </div>
-
-        <p className="nota-datos-demo">
-          Consulta tu información personal y clínica.
-        </p>
-
+        <p className="nota-datos-demo">Consulta tu información personal y clínica.</p>
+        
         <section className="tarjeta-perfil-paciente">
           <span className="avatar-paciente-grande">{iniciales(user?.name)}</span>
           <div>
@@ -195,45 +230,11 @@ function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
           </div>
           <span className="etiqueta-estado">Vista propia</span>
         </section>
-
-        <section className="tarjeta-contenido">
-          <div className="encabezado-seccion">
-            <div>
-              <h2>Resumen del expediente</h2>
-              <p>Datos de contacto y atención</p>
-            </div>
-          </div>
-
-          <div className="ficha-datos-grid resumen-datos-paciente">
-            <div className="dato-ficha">
-              <span>Fecha de nacimiento</span>
-              <strong>{paciente?.dateOfBirth || 'Sin registro'}</strong>
-            </div>
-            <div className="dato-ficha dato-destacado">
-              <span>Tipo de sangre</span>
-              <strong>{paciente?.bloodType || 'Sin registro'}</strong>
-            </div>
-            <div className="dato-ficha ancho-completo">
-              <span>Contacto de emergencia</span>
-              <strong>
-                {paciente?.emergencyContact || 'Sin registro'}
-                {paciente?.emergencyPhone ? ` · ${paciente.emergencyPhone}` : ''}
-              </strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Seguro médico</span>
-              <strong>{paciente?.insurance || 'Sin registro'}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Última visita</span>
-              <strong>{paciente?.lastVisit ?? 'Sin visitas registradas'}</strong>
-            </div>
-          </div>
-        </section>
       </div>
     )
   }
 
+  // --- VISTA PARA ADMIN/DOCTOR ---
   return (
     <div className="pila-pagina">
       <div className="encabezado-pagina">
@@ -246,30 +247,21 @@ function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
         </button>
       </div>
 
-      <p className="nota-datos-demo">
-        Consulta y administra el directorio de pacientes.
-      </p>
+      <p className="nota-datos-demo">Consulta y administra el directorio de pacientes.</p>
 
       <section className="resumen-modulo-grid" aria-label="Resumen de pacientes">
         <article className="resumen-modulo-card">
           <span className="resumen-icono"><Icono name="patients" size={17} /></span>
           <span>
             <small>Pacientes en el directorio</small>
-            <strong>{pacientes.length}</strong>
+            <strong>{totalElementos}</strong>
           </span>
         </article>
         <article className="resumen-modulo-card">
           <span className="resumen-icono"><Icono name="check" size={17} /></span>
           <span>
             <small>Pacientes activos</small>
-            <strong>{pacientes.filter((paciente) => paciente.status === 'Activo').length}</strong>
-          </span>
-        </article>
-        <article className="resumen-modulo-card">
-          <span className="resumen-icono"><Icono name="clock" size={17} /></span>
-          <span>
-            <small>Pendientes de seguimiento</small>
-            <strong>{pacientes.filter((paciente) => paciente.status === 'Pendiente').length}</strong>
+            <strong>{pacientes.filter((p) => p.status === 'Activo').length}</strong>
           </span>
         </article>
       </section>
@@ -277,26 +269,11 @@ function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
       <section className="tarjeta-contenido">
         <div className="barra-pacientes">
           <div className="pestanas-pacientes">
-            <button
-              className={`pestana-paciente ${filtroEstado === 'Todos' ? 'seleccionado' : ''}`}
-              onClick={() => establecerFiltroEstado('Todos')}
-              type="button"
-            >
+            <button className={`pestana-paciente ${filtroEstado === 'Todos' ? 'seleccionado' : ''}`} onClick={() => establecerFiltroEstado('Todos')} type="button">
               Todos <b>{pacientes.length}</b>
             </button>
-            <button
-              className={`pestana-paciente ${filtroEstado === 'Activo' ? 'seleccionado' : ''}`}
-              onClick={() => establecerFiltroEstado('Activo')}
-              type="button"
-            >
+            <button className={`pestana-paciente ${filtroEstado === 'Activo' ? 'seleccionado' : ''}`} onClick={() => establecerFiltroEstado('Activo')} type="button">
               Activos <b>{pacientes.filter((p) => p.status === 'Activo').length}</b>
-            </button>
-            <button
-              className={`pestana-paciente ${filtroEstado === 'Pendiente' ? 'seleccionado' : ''}`}
-              onClick={() => establecerFiltroEstado('Pendiente')}
-              type="button"
-            >
-              Pendientes <b>{pacientes.filter((p) => p.status === 'Pendiente').length}</b>
             </button>
           </div>
 
@@ -307,6 +284,7 @@ function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
               onChange={(evento) => {
                 const valor = evento.target.value
                 valor ? setParams({ search: valor }) : setParams({})
+                setPaginaActual(0) // Reiniciar a la primera página al buscar
               }}
               placeholder="Buscar por nombre, correo, expediente o NSS…"
               aria-label="Buscar paciente"
@@ -325,15 +303,16 @@ function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
                 <th>Sangre</th>
                 <th>Seguro</th>
                 <th>Teléfono</th>
-                <th>Última visita</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {pacientesVisibles.map((paciente) => (
+              {cargando ? (
+                <tr><td colSpan="9" style={{textAlign: 'center'}}>Cargando pacientes...</td></tr>
+              ) : pacientesVisibles.map((paciente) => (
                 <tr key={paciente.id}>
-                  <td>{paciente.expediente ?? paciente.id}</td>
+                  <td>{paciente.expediente}</td>
                   <td>
                     <span className="celda-paciente">
                       <span className="avatar-paciente">{iniciales(paciente.name)}</span>
@@ -344,22 +323,12 @@ function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
                     </span>
                   </td>
                   <td>{paciente.age || '—'}</td>
-                  <td>
-                    {paciente.sex === 'F'
-                      ? 'Femenino'
-                      : paciente.sex === 'M'
-                        ? 'Masculino'
-                        : paciente.sex || '—'}
-                  </td>
+                  <td>{paciente.sex === 'F' ? 'Femenino' : paciente.sex === 'M' ? 'Masculino' : paciente.sex || '—'}</td>
                   <td>{paciente.bloodType || '—'}</td>
                   <td>{paciente.insurance || '—'}</td>
                   <td>{paciente.phone}</td>
-                  <td>{paciente.lastVisit}</td>
                   <td>
-                    <EtiquetaEstado
-                      estado={paciente.status}
-                      className={paciente.status === 'Pendiente' ? 'estado-pendiente' : ''}
-                    />
+                    <EtiquetaEstado estado={paciente.status} className={paciente.status === 'Pendiente' ? 'estado-pendiente' : ''} />
                   </td>
                   <td>
                     <div className="acciones-tabla">
@@ -377,7 +346,20 @@ function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
           </table>
         </div>
 
-        {!pacientesVisibles.length && (
+        {/* CONTROLES DE PAGINACIÓN */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '0 10px' }}>
+          <button className="boton-secundario" disabled={paginaActual === 0 || cargando} onClick={() => setPaginaActual(paginaActual - 1)}>
+            ← Anterior
+          </button>
+          <span style={{ fontSize: '14px', color: '#666' }}>
+            Página {paginaActual + 1} de {totalPaginas}
+          </span>
+          <button className="boton-secundario" disabled={paginaActual >= totalPaginas - 1 || cargando} onClick={() => setPaginaActual(paginaActual + 1)}>
+            Siguiente →
+          </button>
+        </div>
+
+        {!cargando && !pacientesVisibles.length && (
           <div className="estado-vacio">
             <strong>No encontramos pacientes</strong>
             <span>Cambia la búsqueda o el filtro seleccionado.</span>
@@ -385,82 +367,35 @@ function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
         )}
       </section>
 
+      {/* MODAL DE DETALLE (Se mantiene igual, solo ajustado al objeto mapeado) */}
       {modal?.tipo === 'detalle' && (
         <ModalFormulario
           titulo={modal.paciente.name}
-          descripcion={`Expediente · ${modal.paciente.expediente ?? modal.paciente.id}`}
+          descripcion={`Expediente · ${modal.paciente.expediente}`}
           alCerrar={() => establecerModal(null)}
           pie={
-            <button
-              className="boton-secundario"
-              type="button"
-              onClick={() => abrirFormulario(modal.paciente)}
-            >
+            <button className="boton-secundario" type="button" onClick={() => abrirFormulario(modal.paciente)}>
               Editar ficha
             </button>
           }
         >
           <div className="ficha-datos-grid">
-            <div className="dato-ficha">
-              <span>Sexo</span>
-              <strong>{modal.paciente.sex === 'F' ? 'Femenino' : modal.paciente.sex === 'M' ? 'Masculino' : modal.paciente.sex || 'Sin especificar'}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Edad</span>
-              <strong>{modal.paciente.age ? `${modal.paciente.age} años` : 'No indicada'}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Fecha de nacimiento</span>
-              <strong>{modal.paciente.dateOfBirth || 'Sin registro'}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Estado civil</span>
-              <strong>{modal.paciente.maritalStatus || 'Sin registro'}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Ocupación</span>
-              <strong>{modal.paciente.occupation || 'Sin registro'}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Tipo de sangre</span>
-              <strong>{modal.paciente.bloodType || 'Sin registro'}</strong>
-            </div>
-            <div className="dato-ficha ancho-completo">
-              <span>Domicilio</span>
-              <strong>{modal.paciente.address || 'Sin registro'}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Correo</span>
-              <strong>{modal.paciente.email}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Teléfono</span>
-              <strong>{modal.paciente.phone}</strong>
-            </div>
-            <div className="dato-ficha ancho-completo dato-destacado">
-              <span>Contacto de emergencia</span>
-              <strong>{modal.paciente.emergencyContact || 'Sin registro'} · {modal.paciente.emergencyPhone || 'Sin teléfono'}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Seguro médico</span>
-              <strong>{modal.paciente.insurance || 'Sin registro'}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>NSS</span>
-              <strong>{modal.paciente.nss || 'Sin registro'}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Última visita</span>
-              <strong>{modal.paciente.lastVisit}</strong>
-            </div>
-            <div className="dato-ficha">
-              <span>Estado</span>
-              <strong>{modal.paciente.status}</strong>
-            </div>
+            <div className="dato-ficha"><span>Sexo</span><strong>{modal.paciente.sex || 'Sin especificar'}</strong></div>
+            <div className="dato-ficha"><span>Edad</span><strong>{modal.paciente.age ? `${modal.paciente.age} años` : 'No indicada'}</strong></div>
+            <div className="dato-ficha"><span>Fecha de nacimiento</span><strong>{modal.paciente.dateOfBirth || 'Sin registro'}</strong></div>
+            <div className="dato-ficha"><span>Tipo de sangre</span><strong>{modal.paciente.bloodType || 'Sin registro'}</strong></div>
+            <div className="dato-ficha ancho-completo"><span>Domicilio</span><strong>{modal.paciente.address || 'Sin registro'}</strong></div>
+            <div className="dato-ficha"><span>Correo</span><strong>{modal.paciente.email}</strong></div>
+            <div className="dato-ficha"><span>Teléfono</span><strong>{modal.paciente.phone}</strong></div>
+            <div className="dato-ficha ancho-completo dato-destacado"><span>Contacto de emergencia</span><strong>{modal.paciente.emergencyContact || 'Sin registro'} · {modal.paciente.emergencyPhone || 'Sin teléfono'}</strong></div>
+            <div className="dato-ficha"><span>Seguro médico</span><strong>{modal.paciente.insurance || 'Sin registro'}</strong></div>
+            <div className="dato-ficha"><span>NSS</span><strong>{modal.paciente.nss || 'Sin registro'}</strong></div>
+            <div className="dato-ficha"><span>Estado</span><strong>{modal.paciente.status}</strong></div>
           </div>
         </ModalFormulario>
       )}
 
+      {/* MODAL DE FORMULARIO (Ajustado para editar/crear) */}
       {(modal?.tipo === 'nuevo' || modal?.tipo === 'editar') && (
         <ModalFormulario
           titulo={modal.tipo === 'nuevo' ? 'Registrar paciente' : 'Editar paciente'}
@@ -470,145 +405,46 @@ function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
           <form className="formulario-modulo" onSubmit={guardarPaciente} noValidate>
             <fieldset className="grupo-campos-clinicos">
               <legend>Datos personales</legend>
-
               <div className="campos-dos-columnas">
-                <label>
-                  Nombre completo
-                  <input name="name" defaultValue={formulario.name} autoFocus onChange={cambiarCampo} aria-invalid={Boolean(errores.name)} aria-describedby={errores.name ? 'paciente-nombre-error' : undefined} />
-                  {errores.name && <small className="error-campo" id="paciente-nombre-error">{errores.name}</small>}
+                <label>Nombre completo
+                  <input name="name" defaultValue={formulario.name} autoFocus onChange={cambiarCampo} aria-invalid={Boolean(errores.name)} />
+                  {errores.name && <small className="error-campo">{errores.name}</small>}
                 </label>
-
-                <label>
-                  Correo electrónico
-                  <input name="email" type="email" defaultValue={formulario.email} onChange={cambiarCampo} aria-invalid={Boolean(errores.email)} aria-describedby={errores.email ? 'paciente-correo-error' : undefined} />
-                  {errores.email && <small className="error-campo" id="paciente-correo-error">{errores.email}</small>}
+                <label>Correo electrónico
+                  <input name="email" type="email" defaultValue={formulario.email} onChange={cambiarCampo} aria-invalid={Boolean(errores.email)} />
+                  {errores.email && <small className="error-campo">{errores.email}</small>}
                 </label>
-
-                <label>
-                  Teléfono
-                  <input
-                    name="phone"
-                    type="tel"
-                    inputMode="numeric"
-                    maxLength={10}
-                    pattern="[0-9]{10}"
-                    defaultValue={formulario.phone}
-                    onChange={cambiarCampo}
-                    aria-invalid={Boolean(errores.phone)}
-                    aria-describedby={errores.phone ? 'paciente-telefono-error' : undefined}
-                  />
-                  {errores.phone && <small className="error-campo" id="paciente-telefono-error">{errores.phone}</small>}
+                <label>Teléfono
+                  <input name="phone" type="tel" maxLength={10} defaultValue={formulario.phone} onChange={cambiarCampo} aria-invalid={Boolean(errores.phone)} />
+                  {errores.phone && <small className="error-campo">{errores.phone}</small>}
                 </label>
-
-                <label>
-                  Fecha de nacimiento
+                <label>Fecha de nacimiento
                   <input name="dateOfBirth" type="date" defaultValue={formulario.dateOfBirth} />
                 </label>
-
-                <label>
-                  Edad
-                  <input name="age" type="number" min="0" max="120" defaultValue={formulario.age} onChange={cambiarCampo} aria-invalid={Boolean(errores.age)} />
-                  {errores.age && <small className="error-campo">{errores.age}</small>}
-                </label>
-
-                <label>
-                  Sexo
+                <label>Sexo
                   <select name="sex" defaultValue={formulario.sex}>
                     <option value="">Sin especificar</option>
-                    <option value="F">Femenino</option>
                     <option value="M">Masculino</option>
-                    <option value="Otro">Otro</option>
+                    <option value="F">Femenino</option>
                   </select>
                 </label>
-
-                <label>
-                  Estado civil
-                  <select name="maritalStatus" defaultValue={formulario.maritalStatus}>
-                    <option value="">Selecciona una opción</option>
-                    <option>Soltero(a)</option>
-                    <option>Casado(a)</option>
-                    <option>Unión libre</option>
-                    <option>Divorciado(a)</option>
-                    <option>Separado(a)</option>
-                    <option>Viudo(a)</option>
-                    <option>Prefiero no decir</option>
-                  </select>
-                </label>
-
-                <label>
-                  Ocupación
-                  <input name="occupation" defaultValue={formulario.occupation} />
-                </label>
-
-                <label className="ancho-completo">
-                  Domicilio
-                  <input name="address" defaultValue={formulario.address} />
-                </label>
-
-                <label>
-                  Tipo de sangre
+                <label>Tipo de sangre
                   <select name="bloodType" defaultValue={formulario.bloodType}>
                     <option value="">Sin especificar</option>
-                    {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((tipo) => (
-                      <option key={tipo}>{tipo}</option>
-                    ))}
+                    {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((tipo) => <option key={tipo}>{tipo}</option>)}
                   </select>
                 </label>
-
-                <label>
-                  Seguro médico
+                <label>Seguro médico
                   <input name="insurance" defaultValue={formulario.insurance} />
                 </label>
-
-                <label>
-                  NSS
+                <label>NSS
                   <input name="nss" defaultValue={formulario.nss} />
                 </label>
-
-                <label>
-                  Estado
-                  <select name="status" defaultValue={formulario.status}>
-                    <option>Activo</option>
-                    <option>Pendiente</option>
-                    <option>Inactivo</option>
-                  </select>
-                </label>
               </div>
             </fieldset>
-
-            <fieldset className="grupo-campos-clinicos">
-              <legend>Contacto de emergencia</legend>
-
-              <div className="campos-dos-columnas">
-                <label>
-                  Nombre del contacto
-                  <input name="emergencyContact" defaultValue={formulario.emergencyContact} />
-                </label>
-
-                <label>
-                  Teléfono del contacto
-                  <input
-                    name="emergencyPhone"
-                    type="tel"
-                    inputMode="numeric"
-                    maxLength={10}
-                    pattern="[0-9]{10}"
-                    defaultValue={formulario.emergencyPhone}
-                    onChange={cambiarCampo}
-                    aria-invalid={Boolean(errores.emergencyPhone)}
-                  />
-                  {errores.emergencyPhone && <small className="error-campo">{errores.emergencyPhone}</small>}
-                </label>
-              </div>
-            </fieldset>
-
             <div className="modal-pie interno">
-              <button className="boton-secundario" type="button" onClick={() => establecerModal(null)}>
-                Cancelar
-              </button>
-              <button className="accion-principal" type="submit">
-                {modal.tipo === 'nuevo' ? 'Agregar paciente' : 'Guardar cambios'}
-              </button>
+              <button className="boton-secundario" type="button" onClick={() => establecerModal(null)}>Cancelar</button>
+              <button className="accion-principal" type="submit">{modal.tipo === 'nuevo' ? 'Agregar' : 'Guardar cambios'}</button>
             </div>
           </form>
         </ModalFormulario>

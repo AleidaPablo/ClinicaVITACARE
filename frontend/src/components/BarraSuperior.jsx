@@ -2,11 +2,15 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { NAVEGACION_POR_ROL, TITULOS_DE_PAGINA } from '../config/navegacion.js'
 import Icono from './Icono.jsx'
 
-function obtenerTituloPagina(pathname, rutaBase, role) {
-  const rutaRelativa = pathname.slice(rutaBase.length).replace(/^\/+|\/+$/g, '')
+function obtenerTituloPagina(pathname = '', rutaBase = '', role = '') {
+  const longitudBase = rutaBase ? rutaBase.length : 0;
+  
+  const rutaRelativa = pathname.slice(longitudBase).replace(/^\/+|\/+$/g, '')
   const segment = rutaRelativa.split('/').at(-1)
-  const tituloRol = (NAVEGACION_POR_ROL[role] ?? []).find((item) => item.path === segment)?.label
-  return tituloRol ?? TITULOS_DE_PAGINA[segment] ?? 'Panel principal'
+  const navegacion = NAVEGACION_POR_ROL?.[role] ?? [];
+  const tituloRol = navegacion.find((item) => item.path === segment)?.label
+
+  return tituloRol ?? TITULOS_DE_PAGINA?.[segment] ?? 'Panel principal'
 }
 
 function obtenerIniciales(name = '') {

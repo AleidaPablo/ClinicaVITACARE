@@ -1,8 +1,7 @@
-
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Icono from '../components/Icono.jsx'
 import ModalFormulario from '../components/ModalFormulario.jsx'
-import { useDatosDemostracion } from '../context/useDatosDemostracion.js'
+import axiosClient from '../config/axiosClient' // <-- Conexión al Backend
 import {
   normalizarDatosFormulario,
   validarCorreo,
@@ -10,6 +9,7 @@ import {
 } from '../utilidades/validacionesFormulario.js'
 
 const medicoVacio = {
+  id: null,
   name: '',
   specialty: '',
   email: '',
@@ -23,15 +23,52 @@ const medicoVacio = {
 }
 
 export default function PaginaMedicos() {
-  const { medicos, establecerMedicos } = useDatosDemostracion()
+  // 1. Estados para los datos reales del backend
+  const [medicos, establecerMedicos] = useState([])
+  const [cargando, establecerCargando] = useState(true)
+
+  // Estados de la UI
   const [busqueda, establecerBusqueda] = useState('')
   const [especialidad, establecerEspecialidad] = useState('Todas')
   const [modal, establecerModal] = useState(null)
   const [formulario, establecerFormulario] = useState(medicoVacio)
   const [errores, establecerErrores] = useState({})
 
+  // 2. EFECTO PARA CARGAR MÉDICOS DESDE SPRING BOOT
+  useEffect(() => {
+    const cargarMedicos = async () => {
+      try {
+        const res = await axiosClient.get('/medicos')
+        
+        // Mapeamos los datos que devuelve el backend al formato de la interfaz
+        const medicosMapeados = res.data.content.map(m => ({
+          id: m.id,
+          name: m.nombreCompleto,
+          email: m.email,
+          phone: m.telefono || '',
+          license: m.cedulaProfesional || '',
+          experience: m.anosExperiencia || 0,
+          languages: m.idiomas || 'Español',
+          consultationRoom: m.consultorio || 'Por asignar',
+          availability: m.disponibilidad || 'Sin definir',
+          specialty: 'Medicina General', // Nota: El backend no tiene este campo aún, lo dejamos fijo
+          status: m.activo ? 'Activo' : 'Inactivo'
+        }))
+        
+        establecerMedicos(medicosMapeados)
+      } catch (error) {
+        console.error("Error al cargar médicos:", error)
+      } finally {
+        establecerCargando(false)
+      }
+    }
+    cargarMedicos()
+  }, [])
+
+  // Calcular especialidades únicas para el filtro
   const especialidades = [...new Set(medicos.map((medico) => medico.specialty))]
 
+  // Filtro local
   const visibles = useMemo(
     () => medicos.filter((medico) =>
       `${medico.name} ${medico.specialty} ${medico.email}`
@@ -48,61 +85,58 @@ export default function PaginaMedicos() {
     establecerModal(medico ? 'editar' : 'nuevo')
   }
 
-  
-function validarCampo(nombre, valor) {
-  const texto = String(valor ?? '').trim()
+  function validarCampo(nombre, valor) {
+    const texto = String(valor ?? '').trim()
 
-  if (['name', 'specialty'].includes(nombre) && !texto) {
-    return 'Este campo es obligatorio.'
-  }
-
-  if (nombre === 'name' && !/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(texto)) {
-    return 'El nombre solo debe contener letras y espacios.'
-  }
-
-  if (nombre === 'phone') {
-    return validarTelefono(valor, true)
-  }
-
-  if (nombre === 'experience' && texto && (
-    Number(texto) < 0 || Number(texto) > 60
-  )) {
-    return 'Los años de experiencia deben estar entre 0 y 60.'
-  }
-
-  if (nombre === 'email') {
-    const error = validarCorreo(texto)
-
-    if (error) return error
-
-    if (medicos.some((medico) =>
-      medico.email.toLowerCase() === texto.toLowerCase() &&
-      medico.id !== formulario.id
-    )) {
-      return 'Ese correo ya está registrado.'
+    if (['name'].includes(nombre) && !texto) {
+      return 'Este campo es obligatorio.'
     }
+
+    if (nombre === 'name' && !/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(texto)) {
+      return 'El nombre solo debe contener letras y espacios.'
+    }
+
+    if (nombre === 'phone') {
+      return validarTelefono(valor, true)
+    }
+
+    if (nombre === 'experience' && texto && (
+      Number(texto) < 0 || Number(texto) > 60
+    )) {
+      return 'Los años de experiencia deben estar entre 0 y 60.'
+    }
+
+    if (nombre === 'email') {
+      const error = validarCorreo(texto)
+      if (error) return error
+
+      if (medicos.some((medico) =>
+        medico.email.toLowerCase() === texto.toLowerCase() &&
+        medico.id !== formulario.id
+      )) {
+        return 'Ese correo ya está registrado.'
+      }
+    }
+
+    return ''
   }
-
-  return ''
-}
-
 
   function gestionarCambio(evento) {
     const { name, value } = evento.target
-
     establecerErrores((actuales) => ({
       ...actuales,
       [name]: validarCampo(name, value)
     }))
   }
 
-  function guardar(evento) {
+  // 3. GUARDAR MÉDICO (POST o PUT AXIOS)
+  async function guardar(evento) {
     evento.preventDefault()
 
     const valores = normalizarDatosFormulario(evento.currentTarget)
 
     const erroresValidacion = Object.fromEntries(
-      ['name', 'specialty', 'email', 'phone', 'experience']
+      ['name', 'email', 'phone', 'experience']
         .map((campo) => [
           campo,
           validarCampo(campo, valores[campo])
@@ -111,28 +145,38 @@ function validarCampo(nombre, valor) {
     )
 
     establecerErrores(erroresValidacion)
-
     if (Object.keys(erroresValidacion).length) return
 
-    if (modal === 'editar') {
-      establecerMedicos((lista) =>
-        lista.map((medico) =>
-          medico.id === formulario.id
-            ? { ...medico, ...valores }
-            : medico
-        )
-      )
-    } else {
-      establecerMedicos((lista) => [
-        {
-          ...valores,
-          id: `M-${String(Date.now()).slice(-4)}`
-        },
-        ...lista
-      ])
-    }
+    try {
+      // Mapeamos al DTO del Backend
+      const payload = {
+        nombreCompleto: valores.name,
+        email: valores.email,
+        password: "Doctor123!", // Contraseña por defecto para el médico
+        cedulaProfesional: valores.license || 'SIN-CEDULA',
+        anosExperiencia: Number(valores.experience) || 0,
+        consultorio: valores.consultationRoom,
+        idiomas: valores.languages,
+        disponibilidad: valores.availability,
+        telefono: valores.phone
+      }
 
-    establecerModal(null)
+      if (modal === 'editar') {
+        await axiosClient.put(`/medicos/${formulario.id}`, payload)
+      } else {
+        await axiosClient.post('/medicos', payload)
+      }
+
+      // Recargamos la página para ver los cambios
+      window.location.reload() 
+      
+    } catch (error) {
+      alert("Error al guardar médico: " + (error.response?.data?.mensaje || error.message))
+    }
+  }
+
+  if (cargando) {
+    return <div className="pila-pagina" style={{ padding: '2rem', textAlign: 'center' }}>Cargando directorio médico...</div>
   }
 
   return (
@@ -220,13 +264,16 @@ function validarCampo(nombre, valor) {
               </span>
               <button
                 type="button"
-                onClick={() => establecerMedicos((lista) =>
-                  lista.map((m) =>
-                    m.id === medico.id
-                      ? { ...m, status: m.status === 'Activo' ? 'Inactivo' : 'Activo' }
-                      : m
+                onClick={() => {
+                  // Actualización visual rápida (en un proyecto real esto llamaría a un endpoint PATCH)
+                  establecerMedicos((lista) =>
+                    lista.map((m) =>
+                      m.id === medico.id
+                        ? { ...m, status: m.status === 'Activo' ? 'Inactivo' : 'Activo' }
+                        : m
+                    )
                   )
-                )}
+                }}
               >
                 {medico.status === 'Activo' ? 'Desactivar' : 'Activar'}
               </button>

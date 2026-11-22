@@ -19,7 +19,7 @@ export function RutaPorRol({ allowedRoles }) {
   const fallbackPath = inheritedContext?.rutaBase ?? '/app'
 
   if (!currentUser) return <Navigate to="/login" replace />
-  if (!allowedRoles.includes(currentUser.role)) {
+  if (!allowedRoles.includes(currentUser.rol)) {
     return <Navigate to={`${fallbackPath}/dashboard`} replace />
   }
 

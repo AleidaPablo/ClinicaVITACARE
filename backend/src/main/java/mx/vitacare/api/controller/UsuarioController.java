@@ -15,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -61,19 +62,27 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.cambiarEstado(id));
     }
 
-    // --- Endpoints de Perfil del Usuario Autenticado ---
+    
 
-    @GetMapping("/me")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<PerfilResponseDTO> obtenerMiPerfil(@AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(usuarioService.obtenerMiPerfil(userDetails.getUsername()));
-    }
+@GetMapping("/me")
+@PreAuthorize("isAuthenticated()")
+public ResponseEntity<PerfilResponseDTO> obtenerMiPerfil(
+        Authentication authentication) {
 
-    @PutMapping("/me")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<PerfilResponseDTO> actualizarMiPerfil(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody PerfilRequestDTO dto) {
-        return ResponseEntity.ok(usuarioService.actualizarMiPerfil(userDetails.getUsername(), dto));
-    }
+    return ResponseEntity.ok(
+        usuarioService.obtenerMiPerfil(authentication.getName())
+    );
+}
+
+@PutMapping("/me")
+@PreAuthorize("isAuthenticated()")
+public ResponseEntity<PerfilResponseDTO> actualizarMiPerfil(
+        Authentication authentication,
+        @Valid @RequestBody PerfilRequestDTO dto) {
+
+    return ResponseEntity.ok(
+        usuarioService.actualizarMiPerfil(authentication.getName(), dto)
+    );
+}
+
 }

@@ -30,6 +30,10 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import mx.vitacare.api.dto.SolicitudRecuperacionRequest;
+import mx.vitacare.api.dto.RestablecerContrasenaRequest;
+import mx.vitacare.api.service.TokenRecuperacionService;
+
 @RestController
 @RequestMapping("/api/autenticacion")
 public class AutenticacionController {
@@ -42,6 +46,7 @@ public class AutenticacionController {
     private final PacienteRepository pacienteRepository;
     private final MedicoRepository medicoRepository;
     private final TokenRevocadoService tokenRevocadoService;
+    private final TokenRecuperacionService tokenRecuperacionService;
 
     public AutenticacionController(
             AuthenticationManager authenticationManager,
@@ -51,7 +56,8 @@ public class AutenticacionController {
             RolRepository rolRepository,
             PacienteRepository pacienteRepository,
             MedicoRepository medicoRepository,
-            TokenRevocadoService tokenRevocadoService) {
+            TokenRevocadoService tokenRevocadoService,
+            TokenRecuperacionService tokenRecuperacionService) {
 
         this.authenticationManager = authenticationManager;
         this.jwtServicio = jwtServicio;
@@ -61,6 +67,7 @@ public class AutenticacionController {
         this.pacienteRepository = pacienteRepository;
         this.medicoRepository = medicoRepository;
         this.tokenRevocadoService = tokenRevocadoService;
+        this.tokenRecuperacionService = tokenRecuperacionService;
     }
 
     @PostMapping("/login")
@@ -164,4 +171,41 @@ public class AutenticacionController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body("Usuario registrado exitosamente");
     }
+
+
+    // Solicitar recuperación de contraseña
+    @PostMapping("/recuperar-contrasena")
+    public ResponseEntity<Map<String, String>> solicitarRecuperacion(
+            @Valid @RequestBody SolicitudRecuperacionRequest request) {
+
+        tokenRecuperacionService.solicitarRecuperacion(
+                request.getEmail());
+
+        Map<String, String> respuesta = new HashMap<>();
+        respuesta.put(
+                "mensaje",
+                "Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña.");
+
+        return ResponseEntity.ok(respuesta);
+    }
+
+    // Restablecer contraseña con el token recibido por correo
+    @PostMapping("/restablecer-contrasena")
+    public ResponseEntity<Map<String, String>> restablecerContrasena(
+            @Valid @RequestBody RestablecerContrasenaRequest request) {
+
+        tokenRecuperacionService.restablecerContrasena(
+                request.getToken(),
+                request.getNuevaContrasena());
+
+        Map<String, String> respuesta = new HashMap<>();
+        respuesta.put(
+                "mensaje",
+                "Tu contraseña ha sido restablecida correctamente.");
+
+        return ResponseEntity.ok(respuesta);
+    }
+
+
+
 }

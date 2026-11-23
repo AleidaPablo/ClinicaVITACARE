@@ -1,14 +1,18 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import fotoInicio from '../assets/foto-consulta.png'
-import { validarContrasena } from '../utilidades/validacionesFormulario.js'
 
+import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import axiosClient from '../config/axiosClient'
+
+// Marca de VITACARE
 function MarcaRestablecimiento() {
   return (
     <div className="marca" aria-label="VITACARE">
       <span className="marca-icono" aria-hidden="true">
         <svg viewBox="0 0 24 24" focusable="false">
-          <path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" fill="currentColor" />
+          <path
+            d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"
+            fill="currentColor"
+          />
         </svg>
       </span>
       <span className="nombre-marca">VITACARE</span>
@@ -16,6 +20,7 @@ function MarcaRestablecimiento() {
   )
 }
 
+// Icono de candado
 function IconoCandado() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -25,6 +30,7 @@ function IconoCandado() {
   )
 }
 
+// Icono para mostrar u ocultar contraseña
 function IconoVisibilidad({ visible }) {
   return visible ? (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -39,30 +45,103 @@ function IconoVisibilidad({ visible }) {
   )
 }
 
+// Validación de contraseña
+function validarContrasena(valor) {
+  if (!valor) {
+    return 'Ingresa una contraseña.'
+  }
+
+  if (valor.length < 8) {
+    return 'La contraseña debe tener al menos 8 caracteres.'
+  }
+
+  if (!/[A-Z]/.test(valor)) {
+    return 'Incluye al menos una letra mayúscula.'
+  }
+
+  if (!/[0-9]/.test(valor)) {
+    return 'Incluye al menos un número.'
+  }
+
+  if (!/[^A-Za-z0-9]/.test(valor)) {
+    return 'Incluye al menos un carácter especial.'
+  }
+
+  return ''
+}
+
 export default function CrearNuevaContrasena() {
-  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  const [cargando, establecerCargando] = useState(false)
+  const [mensaje, establecerMensaje] = useState('')
+  const [exito, establecerExito] = useState(false)
+
   const [contrasena, establecerContrasena] = useState('')
   const [confirmacion, establecerConfirmacion] = useState('')
+
   const [mostrarContrasena, establecerVisibilidadContrasena] = useState(false)
   const [mostrarConfirmacion, establecerVisibilidadConfirmacion] = useState(false)
+
   const [errores, establecerErrores] = useState({})
 
-  function gestionarEnvio(event) {
+  async function gestionarEnvio(event) {
     event.preventDefault()
+
     const erroresValidacion = {}
     const errorContrasena = validarContrasena(contrasena)
-    if (errorContrasena) erroresValidacion.contrasena = errorContrasena
-    if (!confirmacion) erroresValidacion.confirmacion = 'Confirma tu contraseña.'
-    else if (contrasena !== confirmacion) erroresValidacion.confirmacion = 'Las contraseñas no coinciden.'
+    const token = searchParams.get('token')
+
+    if (!token) {
+      establecerMensaje('El enlace de recuperación no contiene un token válido.')
+      return
+    }
+
+    if (errorContrasena) {
+      erroresValidacion.contrasena = errorContrasena
+    }
+
+    if (!confirmacion) {
+      erroresValidacion.confirmacion = 'Confirma tu contraseña.'
+    } else if (contrasena !== confirmacion) {
+      erroresValidacion.confirmacion = 'Las contraseñas no coinciden.'
+    }
+
     establecerErrores(erroresValidacion)
-    if (!Object.keys(erroresValidacion).length) navigate('/login')
+    establecerMensaje('')
+
+    if (Object.keys(erroresValidacion).length > 0) {
+      return
+    }
+
+    try {
+      establecerCargando(true)
+
+      await axiosClient.post('/autenticacion/restablecer-contrasena', {
+        token: token,
+        nuevaContrasena: contrasena,
+      })
+
+      establecerExito(true)
+      establecerMensaje(
+        'Tu contraseña se ha cambiado correctamente. Ya puedes iniciar sesión.'
+      )
+    } catch (error) {
+      establecerMensaje(
+        error.response?.data?.mensaje ||
+        error.response?.data?.message ||
+        'No se pudo restablecer la contraseña. El enlace puede haber expirado.'
+      )
+    } finally {
+      establecerCargando(false)
+    }
   }
 
   return (
     <main className="pantalla-inicio">
+
       <aside
         className="visual-inicio"
-        style={{ '--foto-inicio': `url("${fotoInicio}")` }}
         aria-label="Consulta médica"
       >
         <div className="contenido-visual-inicio">
@@ -71,19 +150,41 @@ export default function CrearNuevaContrasena() {
         </div>
       </aside>
 
-      <section className="panel-inicio" aria-labelledby="nueva-contrasena-title">
+      <section
+        className="panel-inicio"
+        aria-labelledby="nueva-contrasena-title"
+      >
         <div className="tarjeta-inicio tarjeta-recuperacion tarjeta-nueva-contrasena">
-          <div className="marca-movil"><MarcaRestablecimiento /></div>
+
+          <div className="marca-movil">
+            <MarcaRestablecimiento />
+          </div>
+
           <header className="encabezado-inicio">
-            <h1 id="nueva-contrasena-title">Crea una nueva contraseña</h1>
-            <p>Protege tu cuenta con una contraseña única y segura.</p>
+            <h1 id="nueva-contrasena-title">
+              Crea una nueva contraseña
+            </h1>
+
+            <p>
+              Protege tu cuenta con una contraseña única y segura.
+            </p>
           </header>
 
-          <form className="formulario-inicio formulario-recuperacion" noValidate onSubmit={gestionarEnvio}>
+          <form
+            className="formulario-inicio formulario-recuperacion"
+            noValidate
+            onSubmit={gestionarEnvio}
+          >
+
+            {/* Nueva contraseña */}
             <div className="campo-formulario">
-              <label htmlFor="nueva-contrasena">Nueva contraseña</label>
+              <label htmlFor="nueva-contrasena">
+                Nueva contraseña
+              </label>
+
               <div className={`contenedor-entrada${errores.contrasena ? ' tiene-error' : ''}`}>
                 <IconoCandado />
+
                 <input
                   id="nueva-contrasena"
                   name="nuevaContrasena"
@@ -91,69 +192,148 @@ export default function CrearNuevaContrasena() {
                   autoComplete="new-password"
                   placeholder="Ingresa tu contraseña"
                   value={contrasena}
-                  
                   aria-invalid={Boolean(errores.contrasena)}
-                  aria-describedby={errores.contrasena ? 'nueva-contrasena-error' : 'ayuda-contrasena'}
+                  aria-describedby={
+                    errores.contrasena
+                      ? 'nueva-contrasena-error'
+                      : 'ayuda-contrasena'
+                  }
                   onChange={(event) => {
                     const valor = event.target.value
                     establecerContrasena(valor)
-                    const error = valor ? validarContrasena(valor) : errores.contrasena ? 'Ingresa una contraseña.' : ''
-                    establecerErrores((actuales) => ({ ...actuales, contrasena: error, confirmacion: confirmacion ? valor !== confirmacion ? 'Las contraseñas no coinciden.' : '' : actuales.confirmacion ? 'Confirma tu contraseña.' : '' }))
+
+                    const error = validarContrasena(valor)
+
+                    establecerErrores((actuales) => ({
+                      ...actuales,
+                      contrasena: error,
+                      confirmacion: confirmacion
+                        ? valor !== confirmacion
+                          ? 'Las contraseñas no coinciden.'
+                          : ''
+                        : actuales.confirmacion
+                          ? 'Confirma tu contraseña.'
+                          : '',
+                    }))
                   }}
                 />
+
                 <button
                   className="alternar-visibilidad"
                   type="button"
-                  aria-label={mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  aria-label={
+                    mostrarContrasena
+                      ? 'Ocultar contraseña'
+                      : 'Mostrar contraseña'
+                  }
                   aria-pressed={mostrarContrasena}
-                  onClick={() => establecerVisibilidadContrasena((actual) => !actual)}
+                  onClick={() =>
+                    establecerVisibilidadContrasena((actual) => !actual)
+                  }
                 >
                   <IconoVisibilidad visible={mostrarContrasena} />
                 </button>
               </div>
-              {errores.contrasena && <p className="error-campo" id="nueva-contrasena-error">{errores.contrasena}</p>}
+
+              {errores.contrasena && (
+                <p className="error-campo" id="nueva-contrasena-error">
+                  {errores.contrasena}
+                </p>
+              )}
             </div>
 
+            {/* Confirmar contraseña */}
             <div className="campo-formulario">
-              <label htmlFor="confirmar-contrasena">Confirmar contraseña</label>
+              <label htmlFor="confirmar-contrasena">
+                Confirmar contraseña
+              </label>
+
               <div className={`contenedor-entrada${errores.confirmacion ? ' tiene-error' : ''}`}>
                 <IconoCandado />
+
                 <input
                   id="confirmar-contrasena"
                   name="confirmarContrasena"
                   type={mostrarConfirmacion ? 'text' : 'password'}
                   autoComplete="new-password"
-                  placeholder="Ingresa tu contraseña"
+                  placeholder="Confirma tu contraseña"
                   value={confirmacion}
-                  
                   aria-invalid={Boolean(errores.confirmacion)}
-                  aria-describedby={errores.confirmacion ? 'confirmar-contrasena-error' : undefined}
+                  aria-describedby={
+                    errores.confirmacion
+                      ? 'confirmar-contrasena-error'
+                      : undefined
+                  }
                   onChange={(event) => {
                     const valor = event.target.value
                     establecerConfirmacion(valor)
-                    establecerErrores((actuales) => ({ ...actuales, confirmacion: valor ? valor !== contrasena ? 'Las contraseñas no coinciden.' : '' : actuales.confirmacion ? 'Confirma tu contraseña.' : '' }))
+
+                    establecerErrores((actuales) => ({
+                      ...actuales,
+                      confirmacion: valor
+                        ? valor !== contrasena
+                          ? 'Las contraseñas no coinciden.'
+                          : ''
+                        : actuales.confirmacion
+                          ? 'Confirma tu contraseña.'
+                          : '',
+                    }))
                   }}
                 />
+
                 <button
                   className="alternar-visibilidad"
                   type="button"
-                  aria-label={mostrarConfirmacion ? 'Ocultar confirmación' : 'Mostrar confirmación'}
+                  aria-label={
+                    mostrarConfirmacion
+                      ? 'Ocultar confirmación'
+                      : 'Mostrar confirmación'
+                  }
                   aria-pressed={mostrarConfirmacion}
-                  onClick={() => establecerVisibilidadConfirmacion((actual) => !actual)}
+                  onClick={() =>
+                    establecerVisibilidadConfirmacion((actual) => !actual)
+                  }
                 >
                   <IconoVisibilidad visible={mostrarConfirmacion} />
                 </button>
               </div>
-              {errores.confirmacion && <p className="error-campo" id="confirmar-contrasena-error">{errores.confirmacion}</p>}
+
+              {errores.confirmacion && (
+                <p className="error-campo" id="confirmar-contrasena-error">
+                  {errores.confirmacion}
+                </p>
+              )}
             </div>
 
-            <p className="ayuda-contrasena" id="ayuda-contrasena">Mínimo 8 caracteres. Incluye una mayúscula, un número y un carácter especial.</p>
-            <button className="boton-iniciar" type="submit">
-              Guardar contraseña <span aria-hidden="true">→</span>
+            <p className="ayuda-contrasena" id="ayuda-contrasena">
+              Mínimo 8 caracteres. Incluye una mayúscula, un número y un carácter especial.
+            </p>
+
+            {mensaje && (
+              <p
+                role="status"
+                className={exito ? 'mensaje-exito' : 'error-campo'}
+              >
+                {mensaje}
+              </p>
+            )}
+
+            <button
+              className="boton-iniciar"
+              type="submit"
+              disabled={cargando || exito}
+            >
+              {cargando ? 'Guardando...' : 'Guardar contraseña'}
+              <span aria-hidden="true">→</span>
             </button>
-            <Link className="enlace-regreso-recuperacion" to="/login">
+
+            <Link
+              className="enlace-regreso-recuperacion"
+              to="/login"
+            >
               Volver al inicio de sesión
             </Link>
+
           </form>
         </div>
       </section>

@@ -4,7 +4,6 @@ package mx.vitacare.api.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -13,8 +12,11 @@ import java.time.LocalDateTime;
 @Table(name = "tokens_recuperacion")
 @Getter
 @Setter
-@NoArgsConstructor
 public class TokenRecuperacion {
+
+    // Constructor vacío requerido por Hibernate
+    public TokenRecuperacion() {
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,21 +39,15 @@ public class TokenRecuperacion {
     @Column(name = "creado_en", nullable = false, updatable = false)
     private LocalDateTime creadoEn;
 
+    // Constructor para crear tokens de recuperación
     public TokenRecuperacion(
             Usuario usuario,
             String tokenHash,
             LocalDateTime expiraEn) {
+
         this.usuario = usuario;
         this.tokenHash = tokenHash;
         this.expiraEn = expiraEn;
         this.usado = false;
-    }
-
-        public Usuario getUsuario() {
-        return usuario;
-    }
-
-    public void setUsado(boolean usado) {
-        this.usado = usado;
     }
 }

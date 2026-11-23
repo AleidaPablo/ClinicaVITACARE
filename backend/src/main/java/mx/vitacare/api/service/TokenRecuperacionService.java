@@ -71,7 +71,6 @@ public class TokenRecuperacionService {
 
         String tokenHash = generarHash(token);
 
-       // Invalidar solicitudes anteriores todavía no utilizadas.
 tokenRepository.marcarTokensAnterioresComoUsados(usuario.getId());
 
         TokenRecuperacion nuevoToken = new TokenRecuperacion(
@@ -83,8 +82,8 @@ tokenRepository.marcarTokensAnterioresComoUsados(usuario.getId());
         tokenRepository.save(nuevoToken);
 
         String enlace = frontendUrl
-                + "/restablecer-contrasena?token="
-                + token;
+        + "/crear-nueva-contrasena?token="
+        + token;
 
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setFrom(correoRemitente);
@@ -120,13 +119,16 @@ tokenRepository.marcarTokensAnterioresComoUsados(usuario.getId());
 
         Usuario usuario = registro.getUsuario();
 
-        usuario.setContrasena(
-                passwordEncoder.encode(nuevaContrasena));
+        String contrasenaEncriptada =
+                passwordEncoder.encode(nuevaContrasena);
 
-        usuarioRepository.save(usuario);
+        usuarioRepository.actualizarContrasena(
+                usuario.getId(),
+                contrasenaEncriptada
+        );
 
         registro.setUsado(true);
-        tokenRepository.save(registro);
+        tokenRepository.save(registro); 
     }
 
     private String generarHash(String token) {

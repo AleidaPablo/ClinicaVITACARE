@@ -133,10 +133,18 @@ function AppReal() {
   const navigate = useNavigate()
   const user = useMemo(() => normalizarUsuario(usuarioSesion), [usuarioSesion])
 
-  const alCerrarSesion = () => {
+ 
+const alCerrarSesion = async () => {
+  try {
+    await axiosClient.post('/autenticacion/logout')
+  } catch (error) {
+    console.error('No se pudo invalidar la sesión en el servidor.', error)
+  } finally {
     clearSession()
     navigate('/login', { replace: true })
   }
+}
+
 
   return (
     <EstructuraAplicacion

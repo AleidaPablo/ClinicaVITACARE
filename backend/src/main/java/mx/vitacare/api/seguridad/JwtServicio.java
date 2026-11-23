@@ -1,3 +1,4 @@
+
 package mx.vitacare.api.seguridad;
 
 import io.jsonwebtoken.Claims;
@@ -8,8 +9,12 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class JwtServicio {
@@ -21,8 +26,7 @@ public class JwtServicio {
     public JwtServicio(@Value("${jwt.secreto}") String secretoJwt) {
         byte[] bytesSecreto = secretoJwt.getBytes(StandardCharsets.UTF_8);
         if (bytesSecreto.length < 32) {
-            throw new IllegalStateException(
-                    "JWT_SECRET debe contener al menos 32 bytes.");
+            throw new IllegalStateException("JWT_SECRET debe contener al menos 32 bytes.");
         }
         this.claveFirmado = Keys.hmacShaKeyFor(bytesSecreto);
     }
@@ -33,6 +37,7 @@ public class JwtServicio {
 
         return Jwts.builder()
                 .claims(reclamaciones)
+                .id(UUID.randomUUID().toString())
                 .subject(nombreUsuario)
                 .issuedAt(ahora)
                 .expiration(expiracion)
@@ -55,6 +60,17 @@ public class JwtServicio {
 
     public Object obtenerReclamo(String token, String nombreReclamo) {
         return obtenerReclamaciones(token).get(nombreReclamo);
+    }
+
+    public String obtenerJti(String token) {
+        return obtenerReclamaciones(token).getId();
+    }
+
+    public LocalDateTime obtenerFechaExpiracion(String token) {
+        Date expiracion = obtenerReclamaciones(token).getExpiration();
+        return Instant.ofEpochMilli(expiracion.getTime())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
     }
 
     private Claims obtenerReclamaciones(String token) {

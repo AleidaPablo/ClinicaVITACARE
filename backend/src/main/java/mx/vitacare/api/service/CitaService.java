@@ -7,10 +7,12 @@ import mx.vitacare.api.exception.RecursoNoEncontradoException;
 import mx.vitacare.api.model.Cita;
 import mx.vitacare.api.model.Medico;
 import mx.vitacare.api.model.Paciente;
+import mx.vitacare.api.notificacion.CitaNotificacionEvento;
 import mx.vitacare.api.repository.CitaRepository;
 import mx.vitacare.api.repository.CitaSpecs;
 import mx.vitacare.api.repository.MedicoRepository;
 import mx.vitacare.api.repository.PacienteRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -27,11 +29,14 @@ public class CitaService {
     private final CitaRepository citaRepository;
     private final PacienteRepository pacienteRepository;
     private final MedicoRepository medicoRepository;
+    private final ApplicationEventPublisher eventos;
 
-    public CitaService(CitaRepository citaRepository, PacienteRepository pacienteRepository, MedicoRepository medicoRepository) {
+    public CitaService(CitaRepository citaRepository, PacienteRepository pacienteRepository, MedicoRepository medicoRepository,
+                       ApplicationEventPublisher eventos) {
         this.citaRepository = citaRepository;
         this.pacienteRepository = pacienteRepository;
         this.medicoRepository = medicoRepository;
+        this.eventos = eventos;
     }
 
     @Transactional(readOnly = true)
@@ -80,7 +85,9 @@ public class CitaService {
             throw new AccessDeniedException("El paciente solo puede cancelar sus propias citas.");
         }
         cita.setEstado(nuevoEstado.toUpperCase());
-        return convertirADto(citaRepository.save(cita));
+        Cita actualizada = citaRepository.save(cita);
+        eventos.publishEvent(new CitaNotificacionEvento(actualizada.getId(), CitaNotificacionEvento.Tipo.ESTADO_CAMBIADO));
+        return convertirADto(actualizada);
     }
 
     @Transactional
@@ -184,6 +191,7 @@ public class CitaService {
         cita.setEstado("PENDIENTE");
 
         Cita guardada = citaRepository.save(cita);
+        eventos.publishEvent(new CitaNotificacionEvento(guardada.getId(), CitaNotificacionEvento.Tipo.CREADA));
         return convertirADto(guardada);
     }
 

@@ -55,7 +55,7 @@ export default function CrearNuevaContrasena() {
     if (!confirmacion) erroresValidacion.confirmacion = 'Confirma tu contraseña.'
     else if (contrasena !== confirmacion) erroresValidacion.confirmacion = 'Las contraseñas no coinciden.'
     establecerErrores(erroresValidacion)
-    if (!Object.keys(erroresValidacion).length) navigate('/demo')
+    if (!Object.keys(erroresValidacion).length) navigate('/login')
   }
 
   return (
@@ -91,7 +91,7 @@ export default function CrearNuevaContrasena() {
                   autoComplete="new-password"
                   placeholder="Ingresa tu contraseña"
                   value={contrasena}
-                  onChange={(event) => establecerContrasena(event.target.value)}
+                  
                   aria-invalid={Boolean(errores.contrasena)}
                   aria-describedby={errores.contrasena ? 'nueva-contrasena-error' : 'ayuda-contrasena'}
                   onChange={(event) => {
@@ -125,7 +125,7 @@ export default function CrearNuevaContrasena() {
                   autoComplete="new-password"
                   placeholder="Ingresa tu contraseña"
                   value={confirmacion}
-                  onChange={(event) => establecerConfirmacion(event.target.value)}
+                  
                   aria-invalid={Boolean(errores.confirmacion)}
                   aria-describedby={errores.confirmacion ? 'confirmar-contrasena-error' : undefined}
                   onChange={(event) => {

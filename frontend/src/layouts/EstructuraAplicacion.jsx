@@ -3,9 +3,9 @@ import { Outlet } from 'react-router-dom'
 import BarraLateral from '../components/BarraLateral.jsx'
 import BarraSuperior from '../components/BarraSuperior.jsx'
 
-export default function EstructuraAplicacion({ user, rutaBase, alCerrarSesion, modoDemostracion = false, children }) {
+export default function EstructuraAplicacion({ user, rutaBase, alCerrarSesion, children }) {
   const [menuLateralAbierto, setBarraLateralOpen] = useState(false)
-  const contenidoPagina = children ?? <Outlet context={{ user, rutaBase, modoDemostracion }} />
+  const contenidoPagina = children ?? <Outlet context={{ user, rutaBase }} />
 
   return (
     <div className="estructura-app">
@@ -15,7 +15,6 @@ export default function EstructuraAplicacion({ user, rutaBase, alCerrarSesion, m
         alCerrarSesion={alCerrarSesion}
         estaAbierto={menuLateralAbierto}
         alCerrar={() => setBarraLateralOpen(false)}
-        modoDemostracion={modoDemostracion}
       />
       <div className="contenido-principal-app">
         <BarraSuperior user={user} rutaBase={rutaBase} alPulsarMenu={() => setBarraLateralOpen(true)} />

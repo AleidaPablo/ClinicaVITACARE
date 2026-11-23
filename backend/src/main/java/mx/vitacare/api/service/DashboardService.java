@@ -19,7 +19,7 @@ import java.util.Map;
 public class DashboardService {
 
     private static final List<String> ESTADOS_CITA = List.of("PENDIENTE", "CONFIRMADA", "COMPLETADA", "CANCELADA");
-    // Las citas se guardan en hora local; así "hoy" no depende de la zona horaria del servidor
+    
     private static final ZoneId ZONA_CLINICA = ZoneId.of("America/Mexico_City");
 
     private final PacienteRepository pacienteRepository;

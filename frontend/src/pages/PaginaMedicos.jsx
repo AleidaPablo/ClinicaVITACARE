@@ -1,9 +1,10 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useCallback, useMemo, useState, useEffect } from 'react'
 import Icono from '../components/Icono.jsx'
 import ModalFormulario from '../components/ModalFormulario.jsx'
-import axiosClient from '../config/axiosClient' // <-- Conexión al Backend
+import axiosClient from '../config/axiosClient'
 import {
   normalizarDatosFormulario,
+  validarContrasena,
   validarCorreo,
   validarTelefono
 } from '../utilidades/validacionesFormulario.js'
@@ -23,24 +24,24 @@ const medicoVacio = {
 }
 
 export default function PaginaMedicos() {
-  // 1. Estados para los datos reales del backend
+  
   const [medicos, establecerMedicos] = useState([])
   const [cargando, establecerCargando] = useState(true)
 
-  // Estados de la UI
+ 
   const [busqueda, establecerBusqueda] = useState('')
   const [especialidad, establecerEspecialidad] = useState('Todas')
   const [modal, establecerModal] = useState(null)
   const [formulario, establecerFormulario] = useState(medicoVacio)
   const [errores, establecerErrores] = useState({})
+  const [errorServidor, establecerErrorServidor] = useState('')
 
-  // 2. EFECTO PARA CARGAR MÉDICOS DESDE SPRING BOOT
-  useEffect(() => {
-    const cargarMedicos = async () => {
-      try {
+  
+  const cargarMedicos = useCallback(async () => {
+    try {
         const res = await axiosClient.get('/medicos')
         
-        // Mapeamos los datos que devuelve el backend al formato de la interfaz
+       
         const medicosMapeados = res.data.content.map(m => ({
           id: m.id,
           name: m.nombreCompleto,
@@ -51,24 +52,26 @@ export default function PaginaMedicos() {
           languages: m.idiomas || 'Español',
           consultationRoom: m.consultorio || 'Por asignar',
           availability: m.disponibilidad || 'Sin definir',
-          specialty: 'Medicina General', // Nota: El backend no tiene este campo aún, lo dejamos fijo
+          specialty: 'Medicina General', 
           status: m.activo ? 'Activo' : 'Inactivo'
         }))
         
-        establecerMedicos(medicosMapeados)
-      } catch (error) {
-        console.error("Error al cargar médicos:", error)
-      } finally {
-        establecerCargando(false)
-      }
+      establecerMedicos(medicosMapeados)
+    } catch (error) {
+      establecerErrorServidor(error.response?.data?.mensaje || 'No se pudo cargar el directorio médico.')
+    } finally {
+      establecerCargando(false)
     }
-    cargarMedicos()
   }, [])
 
-  // Calcular especialidades únicas para el filtro
+  useEffect(() => {
+    Promise.resolve().then(() => cargarMedicos())
+  }, [cargarMedicos])
+
+  
   const especialidades = [...new Set(medicos.map((medico) => medico.specialty))]
 
-  // Filtro local
+  
   const visibles = useMemo(
     () => medicos.filter((medico) =>
       `${medico.name} ${medico.specialty} ${medico.email}`
@@ -117,6 +120,7 @@ export default function PaginaMedicos() {
         return 'Ese correo ya está registrado.'
       }
     }
+    if (nombre === 'password' && texto) return validarContrasena(texto)
 
     return ''
   }
@@ -129,30 +133,33 @@ export default function PaginaMedicos() {
     }))
   }
 
-  // 3. GUARDAR MÉDICO (POST o PUT AXIOS)
+  
   async function guardar(evento) {
     evento.preventDefault()
 
     const valores = normalizarDatosFormulario(evento.currentTarget)
 
     const erroresValidacion = Object.fromEntries(
-      ['name', 'email', 'phone', 'experience']
+      ['name', 'email', 'phone', 'experience', 'password']
         .map((campo) => [
           campo,
           validarCampo(campo, valores[campo])
         ])
         .filter(([, error]) => error)
     )
+    if (modal === 'nuevo' && !valores.password) {
+      erroresValidacion.password = 'Escribe una contraseña válida.'
+    }
 
     establecerErrores(erroresValidacion)
     if (Object.keys(erroresValidacion).length) return
 
     try {
-      // Mapeamos al DTO del Backend
+      
       const payload = {
         nombreCompleto: valores.name,
         email: valores.email,
-        password: "Doctor123!", // Contraseña por defecto para el médico
+        password: valores.password,
         cedulaProfesional: valores.license || 'SIN-CEDULA',
         anosExperiencia: Number(valores.experience) || 0,
         consultorio: valores.consultationRoom,
@@ -167,11 +174,12 @@ export default function PaginaMedicos() {
         await axiosClient.post('/medicos', payload)
       }
 
-      // Recargamos la página para ver los cambios
-      window.location.reload() 
+      establecerModal(null)
+      establecerCargando(true)
+      await cargarMedicos()
       
     } catch (error) {
-      alert("Error al guardar médico: " + (error.response?.data?.mensaje || error.message))
+      establecerErrorServidor(error.response?.data?.mensaje || 'Error al guardar médico.')
     }
   }
 
@@ -265,7 +273,7 @@ export default function PaginaMedicos() {
               <button
                 type="button"
                 onClick={() => {
-                  // Actualización visual rápida (en un proyecto real esto llamaría a un endpoint PATCH)
+                  
                   establecerMedicos((lista) =>
                     lista.map((m) =>
                       m.id === medico.id
@@ -295,7 +303,15 @@ export default function PaginaMedicos() {
           alCerrar={() => establecerModal(null)}
         >
           <form className="formulario-modulo" noValidate onSubmit={guardar}>
+            {errorServidor && <p style={{ color: '#b42318', margin: '0 0 10px' }}>{errorServidor}</p>}
             <div className="campos-dos-columnas">
+              {modal === 'nuevo' && (
+                <label>
+                  Contraseña
+                  <input name="password" type="password" onChange={gestionarCambio} aria-invalid={Boolean(errores.password)} />
+                  {errores.password && <small className="error-campo">{errores.password}</small>}
+                </label>
+              )}
               <label>
                 Nombre completo
                 <input name="name" defaultValue={formulario.name} onChange={gestionarCambio} aria-invalid={Boolean(errores.name)} />

@@ -12,8 +12,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 
@@ -52,8 +51,9 @@ public class UsuarioController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponseDTO> actualizar(
             @PathVariable Long id,
-            @Valid @RequestBody UsuarioRequestDTO dto) {
-        return ResponseEntity.ok(usuarioService.actualizar(id, dto));
+            @Valid @RequestBody UsuarioRequestDTO dto,
+            Authentication authentication) {
+        return ResponseEntity.ok(usuarioService.actualizar(id, dto, authentication));
     }
 
     @PatchMapping("/{id}/estado")

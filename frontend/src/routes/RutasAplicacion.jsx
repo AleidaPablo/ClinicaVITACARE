@@ -1,18 +1,16 @@
 import { useContext, useMemo } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
-import { ProveedorAutenticacion, useAutenticacion } from '../context/ContextoAutenticacion.jsx'
+import { ProveedorAutenticacion } from '../context/ContextoAutenticacion.jsx'
 import { contextoAutenticacion } from '../context/ContextoAutenticacionCompartido.js'
+import { useAutenticacion } from '../context/useAutenticacion.js'
 import axiosClient from '../config/axiosClient'
-
-import { ProveedorDatosDemostracion } from '../context/ProveedorDatosDemostracion.jsx'
 
 import EstructuraAplicacion from '../layouts/EstructuraAplicacion.jsx'
 import InicioSesion from '../pages/InicioSesion.jsx'
 import RecuperarContrasena from '../pages/RecuperarContrasena.jsx'
 import CrearNuevaContrasena from '../pages/CrearNuevaContrasena.jsx'
 import RevisaCorreo from '../pages/RevisaCorreo.jsx'
-import SelectorRolesDemo from '../pages/SelectorRolesDemo.jsx'
-import EspacioDemostracion from '../pages/EspacioDemostracion.jsx'
+
 import PaginaPanel from '../pages/PaginaPanel.jsx'
 import PaginaPacientes from '../pages/PaginaPacientes.jsx'
 import PaginaCitas from '../pages/PaginaCitas.jsx'
@@ -21,6 +19,7 @@ import PaginaMedicos from '../pages/PaginaMedicos.jsx'
 import PaginaUsuarios from '../pages/PaginaUsuarios.jsx'
 import PaginaPerfil from '../pages/PaginaPerfil.jsx'
 import { RutaProtegida, RutaPorRol } from './RutaProtegida.jsx'
+import { NAVEGACION_POR_ROL, ROLES } from '../config/navegacion.js'
 
 const rutasModulos = [
   { path: 'citas', roles: ['ADMIN', 'DOCTOR'], element: <PaginaCitas /> },
@@ -33,9 +32,11 @@ const rutasModulos = [
   { path: 'mi-expediente', roles: ['PATIENT'], element: <PaginaExpedientes /> },
 ]
 
-// Decodifica el payload del JWT (base64url + UTF-8, para que los acentos no se dañen)
 function leerPayloadJwt(token) {
-  const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+  const segmentoPayload = token.split('.')[1]
+  if (!segmentoPayload) throw new Error('El servidor devolvió un token inválido.')
+
+  const base64 = segmentoPayload.replace(/-/g, '+').replace(/_/g, '/')
   const bytes = atob(base64)
   const json = decodeURIComponent(
     bytes
@@ -43,22 +44,33 @@ function leerPayloadJwt(token) {
       .map((caracter) => '%' + ('00' + caracter.charCodeAt(0).toString(16)).slice(-2))
       .join('')
   )
-  return JSON.parse(json)
+  const payload = JSON.parse(json)
+  if (payload.exp && payload.exp * 1000 <= Date.now()) {
+    throw new Error('El token de acceso ya expiró. Intenta iniciar sesión de nuevo.')
+  }
+  return payload
 }
 
 function normalizarUsuario(usuario) {
   if (!usuario) return null
+  const rol = usuario.rol ?? usuario.role
   return {
     ...usuario,
-    rol: usuario.rol ?? usuario.role,
-    role: usuario.role ?? usuario.rol,
+    rol,
+    role: rol,
     nombre: usuario.nombre ?? usuario.name,
     name: usuario.name ?? usuario.nombre,
   }
 }
 
+function obtenerRutaInicial(rol) {
+  const primeraRuta = NAVEGACION_POR_ROL[rol]?.[0]?.path ?? 'dashboard'
+  return `/app/${primeraRuta}`
+}
+
 function PaginaLogin() {
   const { establishSession } = useContext(contextoAutenticacion)
+  const { user, isAuthenticated } = useAutenticacion()
   const navigate = useNavigate()
 
   const manejarLogin = async (credenciales) => {
@@ -70,28 +82,47 @@ function PaginaLogin() {
       })
     } catch (error) {
       if (!error.response) {
-        throw new Error('No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.')
+        throw new Error(
+          'No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.',
+          { cause: error },
+        )
       }
-      throw new Error(error.response.data?.mensaje || 'Correo o contraseña incorrectos.')
+      if (error.response.status === 401) {
+        throw new Error('El correo electrónico o la contraseña son incorrectos.', { cause: error })
+      }
+      throw new Error(
+        error.response.data?.mensaje || 'No fue posible iniciar sesión. Intenta de nuevo.',
+        { cause: error },
+      )
     }
 
-    const token = response.data.token
+    const token = response.data?.token
+    if (typeof token !== 'string' || !token) {
+      throw new Error('El servidor no devolvió un token de acceso válido.')
+    }
+
     const payload = leerPayloadJwt(token)
+    const rol = payload.rol ?? payload.role
+
+    if (!Object.values(ROLES).includes(rol)) {
+      throw new Error('Tu cuenta tiene un rol no reconocido. Solicita ayuda al administrador.')
+    }
 
     const usuario = normalizarUsuario({
       email: payload.sub,
-      rol: payload.rol,
+      rol,
       nombre: payload.nombre,
       id: payload.usuarioId,
       patientId: payload.patientId,
       doctorId: payload.doctorId,
     })
 
-    localStorage.setItem('token', token)
-    localStorage.setItem('usuario', JSON.stringify(usuario))
-
     establishSession({ user: usuario, accessToken: token })
-    navigate('/app/dashboard')
+    navigate(obtenerRutaInicial(rol), { replace: true })
+  }
+
+  if (isAuthenticated && Object.values(ROLES).includes(user?.role ?? user?.rol)) {
+    return <Navigate to={obtenerRutaInicial(user.role ?? user.rol)} replace />
   }
 
   return <InicioSesion onLogin={manejarLogin} />
@@ -104,18 +135,15 @@ function AppReal() {
 
   const alCerrarSesion = () => {
     clearSession()
-    navigate('/login')
+    navigate('/login', { replace: true })
   }
 
   return (
-    <ProveedorDatosDemostracion>
-      <EstructuraAplicacion
-        user={user}
-        rutaBase="/app"
-        modoDemostracion={false}
-        alCerrarSesion={alCerrarSesion}
-      />
-    </ProveedorDatosDemostracion>
+    <EstructuraAplicacion
+      user={user}
+      rutaBase="/app"
+      alCerrarSesion={alCerrarSesion}
+    />
   )
 }
 
@@ -131,20 +159,6 @@ export default function RutasAplicacion() {
           <Route path="/revisa-correo" element={<RevisaCorreo />} />
           <Route path="/crear-nueva-contrasena" element={<CrearNuevaContrasena />} />
 
-          {/* RUTAS DEMO */}
-          <Route path="/demo" element={<SelectorRolesDemo />} />
-          <Route path="/demo/:role" element={<EspacioDemostracion />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<PaginaPanel />} />
-            {rutasModulos.map(({ path, roles, element }) => (
-              <Route key={path} path={path} element={<RutaPorRol allowedRoles={roles} />}>
-                <Route index element={element} />
-              </Route>
-            ))}
-            <Route path="*" element={<Navigate to="dashboard" replace />} />
-          </Route>
-
-          {/* RUTAS REALES (APP) */}
           <Route element={<RutaProtegida />}>
             <Route path="/app" element={<AppReal />}>
               <Route index element={<Navigate to="dashboard" replace />} />

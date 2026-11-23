@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import Icono from '../components/Icono.jsx'
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx'
 import ModalFormulario from '../components/ModalFormulario.jsx'
-import { useDatosDemostracion } from '../context/useDatosDemostracion.js'
 import { obtenerFechaLocal } from '../utilidades/fechas.js'
 import { normalizarDatosFormulario } from '../utilidades/validacionesFormulario.js'
 import axiosClient from '../config/axiosClient'
@@ -13,13 +12,12 @@ const citaVacia = { patientId: '', doctorId: '', date: hoy, time: '09:00', type:
 const claseEstadoCita = (estado) => ({ Pendiente: 'estado-pendiente', Confirmada: 'estado-confirmado', Completada: 'estado-completada', Cancelada: 'estado-cancelada' })[estado] ?? ''
 
 export default function PaginaCitas() {
-  const { user, modoDemostracion } = useOutletContext()
-  const { citas: citasDemo, establecerCitas: establecerCitasDemo, pacientes: pacientesDemo, medicos: medicosDemo } = useDatosDemostracion()
+  const { user } = useOutletContext()
 
-  const [citasReales, setCitasReales] = useState([])
-  const [pacientesReales, setPacientesReales] = useState([])
-  const [medicosReales, setMedicosReales] = useState([])
-  const [cargando, setCargando] = useState(modoDemostracion === false)
+  const [citas, setCitas] = useState([])
+  const [pacientes, setPacientes] = useState([])
+  const [medicos, setMedicos] = useState([])
+  const [cargando, setCargando] = useState(true)
   const [errorServidor, setErrorServidor] = useState('')
 
   const [vista, establecerVista] = useState('lista')
@@ -29,21 +27,19 @@ export default function PaginaCitas() {
   const [formulario, establecerFormulario] = useState(citaVacia)
   const [errores, establecerErrores] = useState({})
 
-  const esModoReal = modoDemostracion === false
   const esPaciente = user?.role === 'PATIENT'
 
-  // Función para cargar datos desde Spring Boot (MySQL)
-  const cargarDatos = async () => {
-    if (!esModoReal) return
+
+  const cargarDatos = useCallback(async (signal) => {
     setCargando(true)
     setErrorServidor('')
     try {
-      const [resCitas, resPacientes, resMedicos] = await Promise.all([
-        axiosClient.get('/citas', { params: { size: 100 } }),
-        axiosClient.get('/pacientes', { params: { size: 100 } }).catch(() => ({ data: { content: [] } })),
-        axiosClient.get('/medicos', { params: { size: 100 } }).catch(() => ({ data: { content: [] } }))
+      const [resCitas, resMedicos] = await Promise.all([
+        axiosClient.get('/citas', { params: { size: 100 }, signal }),
+        axiosClient.get('/medicos/directorio', { signal })
       ])
 
+      if (signal?.aborted) return
       const citasMapeadas = (resCitas.data?.content || []).map((c) => {
         const fechaHora = c.fechaHora ? String(c.fechaHora) : ''
         const estadoMayus = (c.estado || 'PENDIENTE').toUpperCase()
@@ -65,38 +61,46 @@ export default function PaginaCitas() {
         }
       })
 
-      const pacientesMapeados = (resPacientes.data?.content || []).map((p) => ({
-        id: p.id,
-        name: p.nombreCompleto,
-        email: p.email,
-        phone: p.telefono
-      }))
-
-      const medicosMapeados = (resMedicos.data?.content || []).map((m) => ({
-        id: m.id,
-        name: m.nombreCompleto,
-        specialty: 'Medicina General',
-        status: m.activo ? 'Activo' : 'Inactivo'
-      }))
-
-      setCitasReales(citasMapeadas)
-      setPacientesReales(pacientesMapeados)
-      setMedicosReales(medicosMapeados)
+      setCitas(citasMapeadas)
+      setMedicos((resMedicos.data || []).map((medico) => ({
+        id: medico.id,
+        name: medico.nombre,
+        specialty: medico.especialidad || '',
+        availability: medico.disponibilidad || '',
+        status: 'Activo'
+      })))
+      if (esPaciente) {
+        setPacientes([{
+          id: user?.patientId,
+          name: user?.name || 'Paciente',
+          email: user?.email || ''
+        }])
+      } else {
+        const resPacientes = await axiosClient.get('/pacientes', { params: { size: 100 }, signal })
+        if (signal?.aborted) return
+        setPacientes((resPacientes.data?.content || []).map((p) => ({
+          id: p.id,
+          name: p.nombreCompleto,
+          email: p.email,
+          phone: p.telefono
+        })))
+      }
     } catch (err) {
+      if (signal?.aborted) return
       console.error('Error al cargar citas de la API:', err)
       setErrorServidor(err.response?.data?.mensaje || 'No se pudo conectar con el servidor para cargar las citas.')
     } finally {
-      setCargando(false)
+      if (!signal?.aborted) setCargando(false)
     }
-  }
+  }, [esPaciente, user])
 
   useEffect(() => {
-    cargarDatos()
-  }, [esModoReal])
-
-  const citas = esModoReal ? citasReales : citasDemo
-  const pacientes = esModoReal ? pacientesReales : pacientesDemo
-  const medicos = esModoReal ? medicosReales : medicosDemo
+    const controlador = new AbortController()
+    Promise.resolve().then(() => {
+      if (!controlador.signal.aborted) cargarDatos(controlador.signal)
+    })
+    return () => controlador.abort()
+  }, [cargarDatos])
 
   const citasVisibles = citas.filter((cita) => {
     const coincidePaciente = !esPaciente || String(cita.patientId) === String(user?.patientId ?? '')
@@ -149,54 +153,40 @@ export default function PaginaCitas() {
     establecerErrores(erroresValidacion)
     if (Object.keys(erroresValidacion).length) return
 
-    if (esModoReal) {
-      const payload = {
-        pacienteId: Number(datos.patientId || user?.patientId),
-        medicoId: Number(datos.doctorId),
-        fechaHora: `${datos.date}T${datos.time}:00`,
-        tipoConsulta: datos.type || 'Consulta general',
-        motivo: datos.reason,
-        duracion: Number(datos.duration || 30),
-        modalidad: datos.modality || 'Presencial',
-        ubicacion: datos.location || 'Consultorio 1'
-      }
+    const payload = {
+      pacienteId: Number(datos.patientId || user?.patientId),
+      medicoId: Number(datos.doctorId),
+      fechaHora: `${datos.date}T${datos.time}:00`,
+      tipoConsulta: datos.type || 'Consulta general',
+      motivo: datos.reason,
+      duracion: Number(datos.duration || 30),
+      modalidad: datos.modality || 'Presencial',
+      ubicacion: datos.location || 'Consultorio 1'
+    }
 
-      try {
-        if (modal === 'editar') {
-          await axiosClient.put(`/citas/${formulario.id}`, payload)
-        } else {
-          await axiosClient.post('/citas', payload)
-        }
-        await cargarDatos()
-        establecerModal(null)
-      } catch (err) {
-        console.error('Error al guardar cita en BD:', err)
-        setErrorServidor(err.response?.data?.mensaje || err.response?.data?.message || 'Error al guardar la cita.')
-      }
-    } else {
-      // Modo demo
+    try {
       if (modal === 'editar') {
-        establecerCitasDemo((actuales) => actuales.map((cita) => cita.id === formulario.id ? { ...cita, ...datos } : cita))
+        await axiosClient.put(`/citas/${formulario.id}`, payload)
       } else {
-        establecerCitasDemo((actuales) => [{ ...datos, status: datos.status ?? 'Pendiente', id: `C-${String(Date.now()).slice(-5)}` }, ...actuales])
+        await axiosClient.post('/citas', payload)
       }
+      await cargarDatos()
       establecerModal(null)
+    } catch (err) {
+      console.error('Error al guardar la cita:', err)
+      setErrorServidor(err.response?.data?.mensaje || err.response?.data?.message || 'Error al guardar la cita.')
     }
   }
 
   async function cambiarEstado(cita, nuevoEstado) {
-    if (esModoReal) {
-      try {
-        await axiosClient.patch(`/citas/${cita.id}/estado`, {
-          estado: nuevoEstado.toUpperCase()
-        })
-        await cargarDatos()
-      } catch (err) {
-        console.error('Error al actualizar estado:', err)
-        alert(err.response?.data?.mensaje || 'Error al actualizar el estado de la cita.')
-      }
-    } else {
-      establecerCitasDemo((actuales) => actuales.map((item) => item.id === cita.id ? { ...item, status: nuevoEstado } : item))
+    try {
+      await axiosClient.patch(`/citas/${cita.id}/estado`, {
+        estado: nuevoEstado.toUpperCase()
+      })
+      await cargarDatos()
+    } catch (err) {
+      console.error('Error al actualizar estado:', err)
+      setErrorServidor(err.response?.data?.mensaje || 'Error al actualizar el estado de la cita.')
     }
     establecerModal(null)
   }
@@ -278,7 +268,7 @@ export default function PaginaCitas() {
         </div>
 
         {cargando ? (
-          <div className="estado-vacio">Cargando citas desde la base de datos…</div>
+          <div className="estado-vacio">Cargando citas…</div>
         ) : vista === 'lista' ? (
           <div className="desplazamiento-tabla">
             <table className="tabla-datos">
@@ -409,7 +399,7 @@ export default function PaginaCitas() {
                   <option value="">Selecciona un médico</option>
                   {medicos.filter((m) => m.status === 'Activo').map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.name} · {m.specialty}
+                      {m.name}{m.specialty ? ` · ${m.specialty}` : ''}{m.availability ? ` · ${m.availability}` : ''}
                     </option>
                   ))}
                 </select>

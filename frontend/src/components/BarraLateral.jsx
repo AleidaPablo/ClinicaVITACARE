@@ -15,7 +15,7 @@ function BarraLateralBrand() {
   )
 }
 
-export default function BarraLateral({ user, rutaBase, alCerrarSesion, estaAbierto, alCerrar, modoDemostracion }) {
+export default function BarraLateral({ user, rutaBase, alCerrarSesion, estaAbierto, alCerrar }) {
   const items = NAVEGACION_POR_ROL[user?.role] ?? []
 
   return (
@@ -47,7 +47,7 @@ export default function BarraLateral({ user, rutaBase, alCerrarSesion, estaAbier
           </div>
           <button className="enlace-lateral salir-lateral" type="button" onClick={alCerrarSesion}>
             <Icono name="logout" size={17} />
-            <span>{modoDemostracion ? 'Salir' : 'Cerrar sesión'}</span>
+            <span>Cerrar sesión</span>
           </button>
         </div>
       </aside>

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import Icono from '../components/Icono.jsx'
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx'
-import { useDatosDemostracion } from '../context/useDatosDemostracion.js'
 import { obtenerFechaLocal } from '../utilidades/fechas.js'
 import axiosClient from '../config/axiosClient'
 
@@ -30,28 +29,25 @@ function EstadoCita({ estado }) {
 }
 
 export default function PaginaPanel() {
-  const { user, rutaBase, modoDemostracion } = useOutletContext()
-  const { pacientes: pacientesDemo, citas: citasDemo, medicos: medicosDemo, usuarios, expedientes } = useDatosDemostracion()
+  const { user, rutaBase } = useOutletContext()
   const momento = obtenerMomentoDelDia()
   const rol = user?.role
   const nombre = rol === 'ADMIN' ? 'Administración' : user?.name ?? 'Usuario'
   const rolPaciente = rol === 'PATIENT'
 
-  const esModoReal = modoDemostracion === false
-  const usaApi = esModoReal && rol === 'ADMIN'
+  const esAdmin = rol === 'ADMIN'
   const [resumen, setResumen] = useState(null)
-  const [cargandoResumen, setCargandoResumen] = useState(usaApi)
+  const [cargandoResumen, setCargandoResumen] = useState(esAdmin)
   const [errorResumen, setErrorResumen] = useState('')
-  const [citasReales, setCitasReales] = useState([])
-  const [medicosReales, setMedicosReales] = useState([])
-  const [pacientesReales, setPacientesReales] = useState([])
+  const [citas, setCitas] = useState([])
+  const [medicos, setMedicos] = useState([])
+  const [pacientes, setPacientes] = useState([])
 
   useEffect(() => {
-    if (!esModoReal) return undefined
     let cancelado = false
 
     async function cargarDatosPanel() {
-      if (usaApi) {
+      if (esAdmin) {
         setCargandoResumen(true)
         setErrorResumen('')
         try {
@@ -70,7 +66,7 @@ export default function PaginaPanel() {
         }
       }
 
-      // Cargar citas reales para médico y paciente
+      
       try {
         const [resCitas, resMed, resPac] = await Promise.all([
           axiosClient.get('/citas', { params: { size: 50 } }).catch(() => ({ data: { content: [] } })),
@@ -97,22 +93,18 @@ export default function PaginaPanel() {
               status: c.estado === 'PENDIENTE' ? 'Pendiente' : c.estado === 'CONFIRMADA' ? 'Confirmada' : c.estado === 'COMPLETADA' ? 'Completada' : 'Cancelada'
             }
           })
-          setCitasReales(mapeadas)
-          setMedicosReales((resMed.data?.content || []).map((m) => ({ id: m.id, name: m.nombreCompleto })))
-          setPacientesReales((resPac.data?.content || []).map((p) => ({ id: p.id, name: p.nombreCompleto })))
+          setCitas(mapeadas)
+          setMedicos((resMed.data?.content || []).map((m) => ({ id: m.id, name: m.nombreCompleto })))
+          setPacientes((resPac.data?.content || []).map((p) => ({ id: p.id, name: p.nombreCompleto })))
         }
       } catch (err) {
-        console.error('Error al cargar datos reales del panel:', err)
+        console.error('Error al cargar los datos del panel:', err)
       }
     }
 
     cargarDatosPanel()
     return () => { cancelado = true }
-  }, [esModoReal, usaApi])
-
-  const citas = esModoReal ? citasReales : citasDemo
-  const pacientes = esModoReal ? pacientesReales : pacientesDemo
-  const medicos = esModoReal ? medicosReales : medicosDemo
+  }, [esAdmin])
 
   const citasDeHoy = citas.filter((cita) => cita.date === fechaActual && cita.status !== 'Cancelada')
   const citasPropias = citas.filter(
@@ -131,7 +123,7 @@ export default function PaginaPanel() {
   if (rol === 'DOCTOR') {
     return <div className="panel-rol panel-medico">
       <section className="bienvenida-rol bienvenida-medico"><div className="bienvenida-copia"><span className="saludo-momento">{momento.saludo}</span><h1>{nombre}</h1><p>Tu jornada clínica está lista. Aquí tienes tu agenda y pacientes para hoy.</p><span className="etiqueta-jornada"><Icono name={momento.icono} size={16} />{momento.etiqueta} · {fechaBonita(fechaActual)}</span></div><div className={`ilustracion-momento ${momento.icono}`}><Icono name={momento.icono} size={53} /><Icono name="destellos" size={20} /></div></section>
-      <section className="rejilla-panel tres-columnas"><TarjetaIndicador titulo="Citas de hoy" valor={citasDeHoy.filter((cita) => cita.doctorId === (user?.doctorId ?? 'M-001')).length} icono="appointments" enlace={`${rutaBase}/citas`} acento /><TarjetaIndicador titulo="Pacientes asignados" valor="3" icono="patients" enlace={`${rutaBase}/pacientes`} /><TarjetaIndicador titulo="Expedientes disponibles" valor={expedientes.length} icono="records" enlace={`${rutaBase}/expedientes`} /></section>
+      <section className="rejilla-panel tres-columnas"><TarjetaIndicador titulo="Citas de hoy" valor={citasDeHoy.filter((cita) => String(cita.doctorId) === String(user?.doctorId ?? '')).length} icono="appointments" enlace={`${rutaBase}/citas`} acento /><TarjetaIndicador titulo="Pacientes asignados" valor={pacientes.length} icono="patients" enlace={`${rutaBase}/pacientes`} /><TarjetaIndicador titulo="Citas pendientes" valor={citasPropias.filter((cita) => cita.status === 'Pendiente').length} icono="clock" enlace={`${rutaBase}/citas`} /></section>
       <div className="columnas-panel"><section className="seccion-panel citas-panel"><header className="cabecera-panel"><div><span className="sobrelinea-panel">AGENDA PERSONAL</span><h2>Próximas consultas</h2><p>Organiza tu día de atención.</p></div><Link to={`${rutaBase}/citas`}>Ver agenda <span>→</span></Link></header>{proximasCitas.length ? <div className="lista-citas-panel">{proximasCitas.map((cita) => <article className="tarjeta-cita-panel" key={cita.id}><div className="bloque-hora-cita"><strong>{cita.time}</strong><small>{fechaBonita(cita.date, { weekday: 'short', day: 'numeric', month: 'short' })}</small></div><span className="avatar-paciente">{(pacientes.find((paciente) => paciente.id === cita.patientId)?.name ?? 'P').slice(0, 1)}</span><div className="datos-cita-panel"><strong>{pacientes.find((paciente) => paciente.id === cita.patientId)?.name ?? 'Paciente'}</strong><small>{cita.reason}</small><span className="detalle-cita-panel">{cita.type || 'Consulta general'} · {cita.location || 'Por asignar'}</span></div><EstadoCita estado={cita.status} /></article>)}</div> : <div className="vacio-panel"><span className="ilustracion-vacia"><Icono name="calendar" size={25} /></span><strong>Tu agenda está despejada</strong><span>Cuando tengas citas, aparecerán aquí.</span></div>}</section><aside className="columna-lateral-panel"><section className="tarjeta-jornada"><div className="jornada-decoracion"><Icono name={momento.icono} size={27} /></div><span className="sobrelinea-panel">TU TURNO</span><h2>{momento.etiqueta}</h2><p>Consulta tu calendario y prepara la atención de tus pacientes.</p><Link to={`${rutaBase}/citas`}>Abrir agenda <span>→</span></Link></section><section className="atajos-panel"><h2>Accesos rápidos</h2><AccesoRapido href={`${rutaBase}/pacientes`} icono="patients" titulo="Pacientes" texto="Ver asignaciones" /><AccesoRapido href={`${rutaBase}/expedientes`} icono="records" titulo="Expedientes" texto="Consultar historial" /></section></aside></div>
     </div>
   }
@@ -147,27 +139,25 @@ export default function PaginaPanel() {
     </div>
   }
 
-  const estados = ['Confirmada', 'Pendiente', 'Completada', 'Cancelada'].map((estado) => ({ estado, total: usaApi ? (resumen?.citasPorEstado?.[estado.toUpperCase()] ?? 0) : citas.filter((cita) => cita.status === estado).length }))
+  const estados = ['Confirmada', 'Pendiente', 'Completada', 'Cancelada'].map((estado) => ({ estado, total: resumen?.citasPorEstado?.[estado.toUpperCase()] ?? 0 }))
   const totalEstados = Math.max(estados.reduce((total, item) => total + item.total, 0), 1)
   const porcentajeConfirmadas = (estados[0].total / totalEstados) * 100
   const porcentajePendientes = (estados[1].total / totalEstados) * 100
   const porcentajeCompletadas = (estados[2].total / totalEstados) * 100
   const ESTADOS_API = { PENDIENTE: 'Pendiente', CONFIRMADA: 'Confirmada', COMPLETADA: 'Completada', CANCELADA: 'Cancelada' }
-  const actividades = usaApi
-    ? (resumen?.actividadReciente ?? []).map((cita) => ({
-        id: cita.id,
-        status: ESTADOS_API[cita.estado] ?? cita.estado,
-        patientName: cita.paciente,
-        reason: cita.motivo || 'Sin motivo registrado',
-        date: String(cita.fechaHora).slice(0, 10)
-      }))
-    : [...citas].sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`)).slice(0, 3)
-  const totalCitas = usaApi ? estados.reduce((total, item) => total + item.total, 0) : citas.length
+  const actividades = (resumen?.actividadReciente ?? []).map((cita) => ({
+    id: cita.id,
+    status: ESTADOS_API[cita.estado] ?? cita.estado,
+    patientName: cita.paciente,
+    reason: cita.motivo || 'Sin motivo registrado',
+    date: String(cita.fechaHora).slice(0, 10)
+  }))
+  const totalCitas = estados.reduce((total, item) => total + item.total, 0)
 
   return <div className="panel-rol panel-admin">
     <section className="bienvenida-rol bienvenida-admin"><div className="bienvenida-copia"><span className="saludo-momento">{momento.saludo}</span><h1>{nombre}</h1><p>Este es el resumen de actividad y operación de la clínica.</p><span className="etiqueta-jornada"><Icono name="destellos" size={15} /> Panel de administración</span></div><div className={`ilustracion-momento ${momento.icono}`}><Icono name={momento.icono} size={49} /><Icono name="destellos" size={20} /></div></section>
-    {usaApi && errorResumen && <p role="alert" style={{ color: '#b42318', margin: '0 0 12px' }}>{errorResumen}</p>}
-    <section className="rejilla-panel cuatro-columnas"><TarjetaIndicador titulo="Pacientes activos" valor={usaApi ? valorApi(resumen?.pacientesActivos) : pacientes.filter((paciente) => paciente.status === 'Activo').length} icono="patients" enlace={`${rutaBase}/pacientes`} /><TarjetaIndicador titulo="Citas de hoy" valor={usaApi ? valorApi(resumen?.citasHoy) : citasDeHoy.length} icono="appointments" enlace={`${rutaBase}/citas`} acento /><TarjetaIndicador titulo="Médicos activos" valor={usaApi ? valorApi(resumen?.medicosActivos) : medicos.filter((item) => item.status === 'Activo').length} icono="doctors" enlace={`${rutaBase}/medicos`} /><TarjetaIndicador titulo="Cuentas de usuario" valor={usaApi ? valorApi(resumen?.cuentasUsuario) : usuarios.length} icono="users" enlace={`${rutaBase}/usuarios`} /></section>
-    <div className="columnas-panel"><section className="seccion-panel actividad-admin"><header className="cabecera-panel"><div><span className="sobrelinea-panel">ACTUALIZACIONES</span><h2>Actividad reciente</h2><p>Movimientos recientes de la agenda.</p></div><Link to={`${rutaBase}/citas`}>Abrir agenda →</Link></header><div className="lista-actividad">{usaApi && !cargandoResumen && actividades.length === 0 && <p>Aún no hay movimientos en la agenda.</p>}{actividades.map((cita) => { const nombrePaciente = cita.patientName ?? pacientes.find((item) => item.id === cita.patientId)?.name; return <article className="fila-actividad" key={cita.id}><span className="icono-actividad"><Icono name="appointments" size={16} /></span><div><strong>{cita.status === 'Cancelada' ? 'Cita cancelada' : cita.status === 'Confirmada' ? 'Cita confirmada' : 'Cita en agenda'}</strong><small>{nombrePaciente ?? 'Paciente'} · {cita.reason}</small></div><time>{fechaBonita(cita.date, { day: 'numeric', month: 'short' })}</time></article> })}</div></section><aside className="columna-lateral-panel"><section className="tarjeta-estados"><span className="sobrelinea-panel">ESTADO DE LA AGENDA</span><h2>Citas por estado</h2><div className="grafica-estados"><div className="anillo-estados" style={{ '--porcentaje-confirmadas': `${porcentajeConfirmadas}%`, '--porcentaje-pendientes': `${porcentajeConfirmadas + porcentajePendientes}%`, '--porcentaje-completadas': `${porcentajeConfirmadas + porcentajePendientes + porcentajeCompletadas}%` }}><div><strong>{usaApi ? valorApi(totalCitas) : totalCitas}</strong><small>citas</small></div></div><div className="leyenda-estados">{estados.map((item) => <span key={item.estado}><i className={`punto-${item.estado.toLowerCase()}`} />{item.estado}<strong>{item.total}</strong></span>)}</div></div></section><section className="atajos-panel"><h2>Administrar</h2><AccesoRapido href={`${rutaBase}/pacientes`} icono="patients" titulo="Pacientes" texto="Directorio clínico" /><AccesoRapido href={`${rutaBase}/usuarios`} icono="users" titulo="Usuarios" texto="Cuentas y roles" /></section></aside></div>
+    {errorResumen && <p role="alert" style={{ color: '#b42318', margin: '0 0 12px' }}>{errorResumen}</p>}
+    <section className="rejilla-panel cuatro-columnas"><TarjetaIndicador titulo="Pacientes activos" valor={valorApi(resumen?.pacientesActivos)} icono="patients" enlace={`${rutaBase}/pacientes`} /><TarjetaIndicador titulo="Citas de hoy" valor={valorApi(resumen?.citasHoy)} icono="appointments" enlace={`${rutaBase}/citas`} acento /><TarjetaIndicador titulo="Médicos activos" valor={valorApi(resumen?.medicosActivos)} icono="doctors" enlace={`${rutaBase}/medicos`} /><TarjetaIndicador titulo="Cuentas de usuario" valor={valorApi(resumen?.cuentasUsuario)} icono="users" enlace={`${rutaBase}/usuarios`} /></section>
+    <div className="columnas-panel"><section className="seccion-panel actividad-admin"><header className="cabecera-panel"><div><span className="sobrelinea-panel">ACTUALIZACIONES</span><h2>Actividad reciente</h2><p>Movimientos recientes de la agenda.</p></div><Link to={`${rutaBase}/citas`}>Abrir agenda →</Link></header><div className="lista-actividad">{!cargandoResumen && actividades.length === 0 && <p>Aún no hay movimientos en la agenda.</p>}{actividades.map((cita) => { const nombrePaciente = cita.patientName ?? pacientes.find((item) => item.id === cita.patientId)?.name; return <article className="fila-actividad" key={cita.id}><span className="icono-actividad"><Icono name="appointments" size={16} /></span><div><strong>{cita.status === 'Cancelada' ? 'Cita cancelada' : cita.status === 'Confirmada' ? 'Cita confirmada' : 'Cita en agenda'}</strong><small>{nombrePaciente ?? 'Paciente'} · {cita.reason}</small></div><time>{fechaBonita(cita.date, { day: 'numeric', month: 'short' })}</time></article> })}</div></section><aside className="columna-lateral-panel"><section className="tarjeta-estados"><span className="sobrelinea-panel">ESTADO DE LA AGENDA</span><h2>Citas por estado</h2><div className="grafica-estados"><div className="anillo-estados" style={{ '--porcentaje-confirmadas': `${porcentajeConfirmadas}%`, '--porcentaje-pendientes': `${porcentajeConfirmadas + porcentajePendientes}%`, '--porcentaje-completadas': `${porcentajeConfirmadas + porcentajePendientes + porcentajeCompletadas}%` }}><div><strong>{valorApi(totalCitas)}</strong><small>citas</small></div></div><div className="leyenda-estados">{estados.map((item) => <span key={item.estado}><i className={`punto-${item.estado.toLowerCase()}`} />{item.estado}<strong>{item.total}</strong></span>)}</div></div></section><section className="atajos-panel"><h2>Administrar</h2><AccesoRapido href={`${rutaBase}/pacientes`} icono="patients" titulo="Pacientes" texto="Directorio clínico" /><AccesoRapido href={`${rutaBase}/usuarios`} icono="users" titulo="Usuarios" texto="Cuentas y roles" /></section></aside></div>
   </div>
 }

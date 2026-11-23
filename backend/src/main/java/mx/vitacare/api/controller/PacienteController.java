@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,18 +23,28 @@ public class PacienteController {
         this.pacienteService = pacienteService;
     }
 
-       @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
     public ResponseEntity<Page<PacienteResponseDTO>> listar(
-            @RequestParam(required = false) String search, // <-- Agregamos parámetro de búsqueda
-            @PageableDefault(size = 10, page = 0) Pageable pageable) {
-        return ResponseEntity.ok(pacienteService.listarPaginados(search, pageable));
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 10, page = 0) Pageable pageable,
+            Authentication autenticacion) {
+        return ResponseEntity.ok(pacienteService.listarPaginados(
+                search,
+                pageable,
+                autenticacion.getName(),
+                obtenerRol(autenticacion)));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
-    public ResponseEntity<PacienteResponseDTO> obtenerPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(pacienteService.obtenerPorId(id));
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
+    public ResponseEntity<PacienteResponseDTO> obtenerPorId(
+            @PathVariable Long id,
+            Authentication autenticacion) {
+        return ResponseEntity.ok(pacienteService.obtenerPorId(
+                id,
+                autenticacion.getName(),
+                obtenerRol(autenticacion)));
     }
 
     @PostMapping
@@ -53,5 +64,14 @@ public class PacienteController {
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         pacienteService.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private String obtenerRol(Authentication autenticacion) {
+        return autenticacion.getAuthorities().stream()
+                .map(autoridad -> autoridad.getAuthority())
+                .filter(autoridad -> autoridad.startsWith("ROLE_"))
+                .map(autoridad -> autoridad.substring(5))
+                .findFirst()
+                .orElse("");
     }
 }

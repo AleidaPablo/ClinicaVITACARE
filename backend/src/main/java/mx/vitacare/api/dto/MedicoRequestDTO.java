@@ -3,6 +3,7 @@ package mx.vitacare.api.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 public class MedicoRequestDTO {
     @NotBlank(message = "El nombre es obligatorio")
@@ -12,9 +13,9 @@ public class MedicoRequestDTO {
     @Email(message = "Correo inválido")
     private String email;
 
-    @NotBlank(message = "La contraseña es obligatoria")
-    private String password; // Para crear su cuenta de usuario
-
+    @Pattern(regexp = "^$|^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$",
+             message = "La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial")
+    private String password; 
     @NotBlank(message = "La cédula es obligatoria")
     private String cedulaProfesional;
 
@@ -25,8 +26,6 @@ public class MedicoRequestDTO {
     private String idiomas;
     private String disponibilidad;
     private String telefono;
-
-    // Getters y Setters
     public String getNombreCompleto() { return nombreCompleto; }
     public void setNombreCompleto(String nombreCompleto) { this.nombreCompleto = nombreCompleto; }
     public String getEmail() { return email; }

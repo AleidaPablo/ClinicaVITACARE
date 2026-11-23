@@ -16,7 +16,6 @@ import java.util.List;
 @Repository
 public interface CitaRepository extends JpaRepository<Cita, Long>, JpaSpecificationExecutor<Cita> {
 
-    // Trae paciente, médico y sus usuarios en la misma consulta (evita el problema N+1)
     @Override
     @EntityGraph(attributePaths = {"paciente.usuario", "medico.usuario"})
     Page<Cita> findAll(Specification<Cita> spec, Pageable pageable);
@@ -28,6 +27,10 @@ public interface CitaRepository extends JpaRepository<Cita, Long>, JpaSpecificat
     List<Cita> findByMedicoIdAndFechaHoraBetween(Long medicoId, LocalDateTime inicio, LocalDateTime fin);
 
     List<Cita> findByPacienteId(Long pacienteId);
+
+    boolean existsByPacienteIdAndMedicoId(Long pacienteId, Long medicoId);
+
+    List<Cita> findByMedicoId(Long medicoId);
 
     List<Cita> findByMedicoIdAndEstadoNotAndFechaHoraBetween(Long medicoId, String estado, LocalDateTime desde, LocalDateTime hasta);
 

@@ -21,8 +21,7 @@ public class RegisterRequest {
     private String password;
 
     private String telefono;
-
-        // Getters y Setters manuales
+    
     public String getNombreCompleto() { return nombreCompleto; }
     public void setNombreCompleto(String nombreCompleto) { this.nombreCompleto = nombreCompleto; }
 

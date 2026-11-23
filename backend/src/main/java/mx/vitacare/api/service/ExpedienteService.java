@@ -13,6 +13,8 @@ import mx.vitacare.api.repository.ConsultaRepository;
 import mx.vitacare.api.repository.ExpedienteRepository;
 import mx.vitacare.api.repository.MedicoRepository;
 import mx.vitacare.api.repository.PacienteRepository;
+import mx.vitacare.api.repository.CitaRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,15 +28,18 @@ public class ExpedienteService {
     private final ConsultaRepository consultaRepository;
     private final PacienteRepository pacienteRepository;
     private final MedicoRepository medicoRepository;
+    private final CitaRepository citaRepository;
 
     public ExpedienteService(ExpedienteRepository expedienteRepository,
                              ConsultaRepository consultaRepository,
                              PacienteRepository pacienteRepository,
-                             MedicoRepository medicoRepository) {
+                             MedicoRepository medicoRepository,
+                             CitaRepository citaRepository) {
         this.expedienteRepository = expedienteRepository;
         this.consultaRepository = consultaRepository;
         this.pacienteRepository = pacienteRepository;
         this.medicoRepository = medicoRepository;
+        this.citaRepository = citaRepository;
     }
 
     @Transactional
@@ -58,7 +63,18 @@ public class ExpedienteService {
     }
 
     @Transactional
-    public ExpedienteResponseDTO actualizarResumen(Long pacienteId, ExpedienteRequestDTO dto) {
+    public ExpedienteResponseDTO obtenerPorPacienteId(Long pacienteId, String correoUsuario, String rol) {
+        validarAccesoPaciente(pacienteId, correoUsuario, rol);
+        return obtenerOCrearPorPacienteId(pacienteId);
+    }
+
+    @Transactional
+    public ExpedienteResponseDTO actualizarResumen(
+            Long pacienteId,
+            ExpedienteRequestDTO dto,
+            String correoUsuario,
+            String rol) {
+        validarAccesoPaciente(pacienteId, correoUsuario, rol);
         Expediente expediente = expedienteRepository.findByPacienteId(pacienteId)
                 .orElseGet(() -> {
                     Paciente paciente = pacienteRepository.findById(pacienteId)
@@ -80,7 +96,12 @@ public class ExpedienteService {
     }
 
     @Transactional
-    public ExpedienteResponseDTO agregarConsulta(Long pacienteId, ConsultaRequestDTO dto) {
+    public ExpedienteResponseDTO agregarConsulta(
+            Long pacienteId,
+            ConsultaRequestDTO dto,
+            String correoUsuario,
+            String rol) {
+        validarAccesoPaciente(pacienteId, correoUsuario, rol);
         Expediente expediente = expedienteRepository.findByPacienteId(pacienteId)
                 .orElseGet(() -> {
                     Paciente paciente = pacienteRepository.findById(pacienteId)
@@ -90,8 +111,16 @@ public class ExpedienteService {
                     return expedienteRepository.save(nuevo);
                 });
 
-        Medico medico = medicoRepository.findById(dto.getDoctorId())
-                .orElseThrow(() -> new RecursoNoEncontradoException("Médico no encontrado con ID: " + dto.getDoctorId()));
+        Medico medico;
+        if ("DOCTOR".equals(rol)) {
+            medico = medicoRepository.findByUsuarioEmail(correoUsuario)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "No se encontró el perfil médico asociado."));
+        } else {
+            medico = medicoRepository.findById(dto.getDoctorId())
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "Médico no encontrado con ID: " + dto.getDoctorId()));
+        }
 
         LocalDate fecha = dto.getFecha() != null ? dto.getFecha() : LocalDate.now();
 
@@ -112,7 +141,6 @@ public class ExpedienteService {
 
         consultaRepository.save(consulta);
 
-        // Actualizamos última visita del paciente
         Paciente p = expediente.getPaciente();
         p.setUltimaVisita(fecha);
         pacienteRepository.save(p);
@@ -128,8 +156,52 @@ public class ExpedienteService {
     }
 
     @Transactional(readOnly = true)
-    public List<ExpedienteResponseDTO> listarTodos() {
-        return expedienteRepository.findAll().stream().map(this::convertirADto).toList();
+    public List<ExpedienteResponseDTO> listarTodos(String correoUsuario, String rol) {
+        if ("ADMIN".equals(rol)) {
+            return expedienteRepository.findAll().stream().map(this::convertirADto).toList();
+        }
+        if ("DOCTOR".equals(rol)) {
+            Long medicoId = medicoRepository.findByUsuarioEmail(correoUsuario)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "No se encontró el perfil médico asociado."))
+                    .getId();
+            List<Long> pacienteIds = citaRepository.findByMedicoId(medicoId).stream()
+                    .map(cita -> cita.getPaciente().getId())
+                    .distinct()
+                    .toList();
+            return expedienteRepository.findAllByPacienteIdIn(pacienteIds).stream()
+                    .map(this::convertirADto)
+                    .toList();
+        }
+        throw new AccessDeniedException("El rol no tiene acceso a los expedientes.");
+    }
+
+    private void validarAccesoPaciente(Long pacienteId, String correoUsuario, String rol) {
+        if ("ADMIN".equals(rol)) {
+            return;
+        }
+        if ("PATIENT".equals(rol)) {
+            Long pacientePropioId = pacienteRepository.findByUsuarioEmail(correoUsuario)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "No se encontró el perfil de paciente asociado."))
+                    .getId();
+            if (!pacientePropioId.equals(pacienteId)) {
+                throw new AccessDeniedException("Solo puedes consultar tu propio expediente.");
+            }
+            return;
+        }
+        if ("DOCTOR".equals(rol)) {
+            Long medicoId = medicoRepository.findByUsuarioEmail(correoUsuario)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "No se encontró el perfil médico asociado."))
+                    .getId();
+            if (!citaRepository.existsByPacienteIdAndMedicoId(pacienteId, medicoId)) {
+                throw new AccessDeniedException(
+                        "No tienes una cita asignada con este paciente.");
+            }
+            return;
+        }
+        throw new AccessDeniedException("El rol no tiene acceso al expediente.");
     }
 
     private ExpedienteResponseDTO convertirADto(Expediente exp) {

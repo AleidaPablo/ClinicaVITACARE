@@ -1,8 +1,7 @@
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import Icono from '../components/Icono.jsx'
-import { useDatosDemostracion } from '../context/useDatosDemostracion.js'
 import {
   normalizarDatosFormulario,
   validarCorreo,
@@ -20,48 +19,31 @@ function sacarIniciales(nombre = '') {
 }
 
 export default function PaginaPerfil() {
-  const { user, modoDemostracion } = useOutletContext()
+  const { user } = useOutletContext()
 
-  const {
-    perfiles,
-    establecerPerfiles,
-    pacientes,
-    establecerPacientes,
-    medicos
-  } = useDatosDemostracion()
-
-  const esModoReal = modoDemostracion === false
-
-  const claveRol =
-    user?.role === 'ADMIN'
-      ? 'admin'
-      : user?.role === 'DOCTOR'
-        ? 'doctor'
-        : 'patient'
-
-  const [perfilReal, setPerfilReal] = useState(null)
-  const [cargando, setCargando] = useState(esModoReal)
+  const [perfil, setPerfil] = useState(null)
+  const [cargando, setCargando] = useState(true)
   const [mensaje, establecerMensaje] = useState('')
   const [errorServidor, setErrorServidor] = useState('')
   const [errores, establecerErrores] = useState({})
 
-  // Estado de fotografía de perfil
+
   const [preview, setPreview] = useState('')
 
-  // Cargar perfil desde el backend
-  const cargarPerfil = async () => {
-    if (!esModoReal) return
 
+  const cargarPerfil = useCallback(async (signal) => {
     setCargando(true)
     setErrorServidor('')
 
     try {
-      const res = await axiosClient.get('/usuarios/me')
+      const res = await axiosClient.get('/usuarios/me', { signal })
 
-      setPerfilReal(res.data)
+      if (signal?.aborted) return
+      setPerfil(res.data)
       setPreview(res.data.fotoUrl || '')
 
     } catch (err) {
+      if (signal?.aborted) return
       console.error('Error al cargar perfil:', err)
 
       setErrorServidor(
@@ -70,104 +52,61 @@ export default function PaginaPerfil() {
       )
 
     } finally {
-      setCargando(false)
+      if (!signal?.aborted) setCargando(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    cargarPerfil()
-  }, [esModoReal])
+    const controlador = new AbortController()
+    Promise.resolve().then(() => {
+      if (!controlador.signal.aborted) cargarPerfil(controlador.signal)
+    })
+    return () => controlador.abort()
+  }, [cargarPerfil])
 
-  // Datos para modo demostración
-  const perfilDemo = perfiles[claveRol]
+ 
+  const nombreUsuario = (perfil?.nombreCompleto || user?.name || '')
 
-  const pacienteDemo =
-    user?.role === 'PATIENT'
-      ? pacientes.find(
-          (el) => el.id === (user?.patientId ?? 'P-001')
-        )
-      : null
+  const emailUsuario = (perfil?.email || user?.email || '')
 
-  const medicoDemo =
-    user?.role === 'DOCTOR'
-      ? medicos.find(
-          (el) => el.id === (user?.doctorId ?? 'M-001')
-        )
-      : null
+  const telefonoUsuario = (perfil?.telefono || '')
 
-  // Fusión según el modo
-  const nombreUsuario = esModoReal
-    ? (perfilReal?.nombreCompleto || user?.name || '')
-    : perfilDemo.name
+  const departamentoUsuario = (perfil?.departamento || '')
 
-  const emailUsuario = esModoReal
-    ? (perfilReal?.email || user?.email || '')
-    : perfilDemo.email
-
-  const telefonoUsuario = esModoReal
-    ? (perfilReal?.telefono || '')
-    : (pacienteDemo?.phone ?? perfilDemo.phone)
-
-  const departamentoUsuario = esModoReal
-    ? (perfilReal?.departamento || '')
-    : (perfilDemo.department ?? 'Administración')
-
-  // Datos paciente
+  
   const esPaciente = user?.role === 'PATIENT'
 
-  const fechaNacimiento = esModoReal
-    ? (perfilReal?.fechaNacimiento || '')
-    : (pacienteDemo?.dateOfBirth || '')
+  const fechaNacimiento = (perfil?.fechaNacimiento || '')
 
-  const ocupacion = esModoReal
-    ? (perfilReal?.ocupacion || '')
-    : (pacienteDemo?.occupation || '')
+  const ocupacion = (perfil?.ocupacion || '')
 
-  const direccion = esModoReal
-    ? (perfilReal?.direccion || '')
-    : (pacienteDemo?.address || '')
+  const direccion = (perfil?.direccion || '')
 
-  const contactoEmergencia = esModoReal
-    ? (perfilReal?.contactoEmergenciaNombre || '')
-    : (pacienteDemo?.emergencyContact || '')
+  const contactoEmergencia = (perfil?.contactoEmergenciaNombre || '')
 
-  const telefonoEmergencia = esModoReal
-    ? (perfilReal?.contactoEmergenciaTelefono || '')
-    : (pacienteDemo?.emergencyPhone || '')
+  const telefonoEmergencia = (perfil?.contactoEmergenciaTelefono || '')
 
-  const tipoSangre = esModoReal
-    ? (perfilReal?.tipoSangre || 'Sin registrar')
-    : (pacienteDemo?.bloodType || 'Sin registrar')
+  const tipoSangre = (perfil?.tipoSangre || 'Sin registrar')
 
-  const seguroMedico = esModoReal
-    ? (perfilReal?.tipoSeguro || 'Sin registrar')
-    : (pacienteDemo?.insurance || 'Sin registrar')
+  const seguroMedico = (perfil?.tipoSeguro || 'Sin registrar')
 
-  // Datos médico
+  
   const esMedico = user?.role === 'DOCTOR'
 
-  const especialidad = esModoReal
-    ? (perfilReal?.especialidad || 'Medicina General')
-    : (medicoDemo?.specialty || 'Medicina General')
+  const especialidad = (perfil?.especialidad || 'Medicina General')
 
-  const cedula = esModoReal
-    ? (perfilReal?.cedulaProfesional || '')
-    : (medicoDemo?.license || '')
+  const cedula = (perfil?.cedulaProfesional || '')
 
-  const consultorio = esModoReal
-    ? (perfilReal?.consultorio || 'Por asignar')
-    : (medicoDemo?.consultationRoom ?? 'Por asignar')
+  const consultorio = (perfil?.consultorio || 'Por asignar')
 
-  const disponibilidad = esModoReal
-    ? (perfilReal?.disponibilidad || 'Sin definir')
-    : (medicoDemo?.availability || '')
+  const disponibilidad = (perfil?.disponibilidad || 'Sin definir')
 
   const iniciales = useMemo(
     () => sacarIniciales(preview ? '' : nombreUsuario),
     [preview, nombreUsuario]
   )
 
-  // Guardar cambios
+  
   async function guardar(evento) {
     evento.preventDefault()
 
@@ -207,91 +146,38 @@ export default function PaginaPerfil() {
 
     if (Object.keys(erroresValidacion).length) return
 
-    // Modo real: guardar en base de datos
-    if (esModoReal) {
-      const payload = {
-        nombreCompleto: datos.name,
-        telefono: datos.phone || '',
-        departamento: datos.department || '',
-        fotoUrl: preview || '',
-        fechaNacimiento: datos.dateOfBirth || null,
-        ocupacion: datos.occupation || '',
-        direccion: datos.address || '',
-        contactoEmergenciaNombre: datos.emergencyContact || '',
-        contactoEmergenciaTelefono: datos.emergencyPhone || ''
-      }
+    
+    const payload = {
+      nombreCompleto: datos.name,
+      telefono: datos.phone || '',
+      departamento: datos.department || '',
+      fotoUrl: preview || '',
+      fechaNacimiento: datos.dateOfBirth || null,
+      ocupacion: datos.occupation || '',
+      direccion: datos.address || '',
+      contactoEmergenciaNombre: datos.emergencyContact || '',
+      contactoEmergenciaTelefono: datos.emergencyPhone || ''
+    }
 
-      try {
-        const res = await axiosClient.put(
-          '/usuarios/me',
-          payload
-        )
+    try {
+      const res = await axiosClient.put('/usuarios/me', payload)
 
-        setPerfilReal(res.data)
-        setPreview(res.data.fotoUrl || preview)
-
-        establecerMensaje(
-          'Perfil actualizado correctamente en la base de datos.'
-        )
-
-      } catch (err) {
-        console.error(
-          'Error al actualizar perfil en BD:',
-          err
-        )
-
-        setErrorServidor(
-          err.response?.data?.mensaje ||
-          err.response?.data?.message ||
-          'Error al actualizar el perfil.'
-        )
-      }
-
-    } else {
-      // Modo demostración
-      establecerPerfiles((actuales) => ({
-        ...actuales,
-
-        [claveRol]: {
-          ...actuales[claveRol],
-          ...datos,
-          avatar: preview,
-          recordatorios: datos.recordatorios === 'on',
-          novedades: datos.novedades === 'on'
-        }
-      }))
-
-      if (pacienteDemo) {
-        const datosPaciente = Object.fromEntries(
-          [
-            'name',
-            'email',
-            'phone',
-            'dateOfBirth',
-            'occupation',
-            'address',
-            'emergencyContact',
-            'emergencyPhone'
-          ].map((campo) => [
-            campo,
-            datos[campo] ?? pacienteDemo[campo]
-          ])
-        )
-
-        establecerPacientes((actuales) =>
-          actuales.map((el) =>
-            el.id === pacienteDemo.id
-              ? { ...el, ...datosPaciente }
-              : el
-          )
-        )
-      }
+      setPerfil(res.data)
+      setPreview(res.data.fotoUrl || preview)
 
       establecerMensaje('Perfil actualizado correctamente.')
+    } catch (err) {
+      console.error('Error al actualizar perfil:', err)
+
+      setErrorServidor(
+        err.response?.data?.mensaje ||
+        err.response?.data?.message ||
+        'Error al actualizar el perfil.'
+      )
     }
   }
 
-  // Validación de campos
+  
   function gestionarCambio(evento) {
     const { name, value } = evento.target
 
@@ -320,7 +206,7 @@ export default function PaginaPerfil() {
     }))
   }
 
-  // Seleccionar fotografía
+  
   function leerFoto(evento) {
     const archivo = evento.target.files?.[0]
 
@@ -341,12 +227,12 @@ export default function PaginaPerfil() {
     lector.readAsDataURL(archivo)
   }
 
-  // Estado de carga
+
   if (cargando) {
     return (
       <div className="pila-pagina">
         <div className="estado-vacio">
-          Cargando tu información de perfil desde la base de datos…
+          Cargando tu información de perfil…
         </div>
       </div>
     )

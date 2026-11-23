@@ -8,8 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,35 +25,63 @@ public class ExpedienteController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
-    public ResponseEntity<List<ExpedienteResponseDTO>> listarTodos() {
-        return ResponseEntity.ok(expedienteService.listarTodos());
+    public ResponseEntity<List<ExpedienteResponseDTO>> listarTodos(Authentication autenticacion) {
+        return ResponseEntity.ok(expedienteService.listarTodos(
+                autenticacion.getName(),
+                obtenerRol(autenticacion)));
     }
 
     @GetMapping("/paciente/{pacienteId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
-    public ResponseEntity<ExpedienteResponseDTO> obtenerPorPacienteId(@PathVariable Long pacienteId) {
-        return ResponseEntity.ok(expedienteService.obtenerOCrearPorPacienteId(pacienteId));
+    public ResponseEntity<ExpedienteResponseDTO> obtenerPorPacienteId(
+            @PathVariable Long pacienteId,
+            Authentication autenticacion) {
+        return ResponseEntity.ok(expedienteService.obtenerPorPacienteId(
+                pacienteId,
+                autenticacion.getName(),
+                obtenerRol(autenticacion)));
     }
 
     @PutMapping("/paciente/{pacienteId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
     public ResponseEntity<ExpedienteResponseDTO> actualizarResumen(
             @PathVariable Long pacienteId,
-            @RequestBody ExpedienteRequestDTO dto) {
-        return ResponseEntity.ok(expedienteService.actualizarResumen(pacienteId, dto));
+            @RequestBody ExpedienteRequestDTO dto,
+            Authentication autenticacion) {
+        return ResponseEntity.ok(expedienteService.actualizarResumen(
+                pacienteId,
+                dto,
+                autenticacion.getName(),
+                obtenerRol(autenticacion)));
     }
 
     @PostMapping("/paciente/{pacienteId}/consultas")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
     public ResponseEntity<ExpedienteResponseDTO> agregarConsulta(
             @PathVariable Long pacienteId,
-            @Valid @RequestBody ConsultaRequestDTO dto) {
-        return new ResponseEntity<>(expedienteService.agregarConsulta(pacienteId, dto), HttpStatus.CREATED);
+            @Valid @RequestBody ConsultaRequestDTO dto,
+            Authentication autenticacion) {
+        return new ResponseEntity<>(
+                expedienteService.agregarConsulta(
+                        pacienteId,
+                        dto,
+                        autenticacion.getName(),
+                        obtenerRol(autenticacion)),
+                HttpStatus.CREATED);
     }
 
     @GetMapping("/mi-expediente")
     @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<ExpedienteResponseDTO> obtenerMiExpediente(@AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(expedienteService.obtenerMiExpediente(userDetails.getUsername()));
+    public ResponseEntity<ExpedienteResponseDTO> obtenerMiExpediente(Authentication autenticacion) {
+        return ResponseEntity.ok(expedienteService.obtenerMiExpediente(autenticacion.getName()));
+    }
+
+    private String obtenerRol(Authentication autenticacion) {
+        return autenticacion.getAuthorities().stream()
+                .map(autoridad -> autoridad.getAuthority())
+                .filter(autoridad -> autoridad.startsWith("ROLE_"))
+                .map(autoridad -> autoridad.substring(5))
+                .findFirst()
+                .orElse("");
     }
 }

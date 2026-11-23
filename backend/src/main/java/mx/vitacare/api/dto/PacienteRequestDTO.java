@@ -2,11 +2,10 @@ package mx.vitacare.api.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import java.time.LocalDate;
 
 public class PacienteRequestDTO {
-
-    // Nuevos campos para crear la cuenta del usuario
     @NotBlank(message = "El nombre es obligatorio")
     private String nombreCompleto;
 
@@ -14,9 +13,11 @@ public class PacienteRequestDTO {
     @Email(message = "Correo inválido")
     private String email;
 
-    private String telefono;
+    @Pattern(regexp = "^$|^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$",
+             message = "La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial")
+    private String password;
 
-    // Datos del paciente
+    private String telefono;
     private LocalDate fechaNacimiento;
     private String sexo;
     private String estadoCivil;
@@ -27,14 +28,14 @@ public class PacienteRequestDTO {
     private String contactoEmergenciaTelefono;
     private String tipoSeguro;
     private String nss;
-
-    // Getters y Setters
     public String getNombreCompleto() { return nombreCompleto; }
     public void setNombreCompleto(String nombreCompleto) { this.nombreCompleto = nombreCompleto; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     public String getTelefono() { return telefono; }
     public void setTelefono(String telefono) { this.telefono = telefono; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
     public LocalDate getFechaNacimiento() { return fechaNacimiento; }
     public void setFechaNacimiento(LocalDate fechaNacimiento) { this.fechaNacimiento = fechaNacimiento; }
     public String getSexo() { return sexo; }

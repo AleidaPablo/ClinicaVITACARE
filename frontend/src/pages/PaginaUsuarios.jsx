@@ -1,20 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import Icono from '../components/Icono.jsx'
 import ModalFormulario from '../components/ModalFormulario.jsx'
-import { useDatosDemostracion } from '../context/useDatosDemostracion.js'
-import { normalizarDatosFormulario, validarCorreo, validarTelefono } from '../utilidades/validacionesFormulario.js'
+
+import { normalizarDatosFormulario, validarContrasena, validarCorreo, validarTelefono } from '../utilidades/validacionesFormulario.js'
 import axiosClient from '../config/axiosClient'
 
 const usuarioVacio = { name: '', email: '', phone: '', department: '', role: 'PATIENT', status: 'Activo', password: '' }
 const nombresRoles = { ADMIN: 'Administrador', DOCTOR: 'Médico', PATIENT: 'Paciente' }
 
 export default function PaginaUsuarios() {
-  const { modoDemostracion } = useOutletContext()
-  const { usuarios: usuariosDemo, establecerUsuarios: establecerUsuariosDemo } = useDatosDemostracion()
+  const { user } = useOutletContext()
 
-  const [usuariosReales, setUsuariosReales] = useState([])
-  const [cargando, setCargando] = useState(modoDemostracion === false)
+  const [usuarios, setUsuarios] = useState([])
+  const [cargando, setCargando] = useState(true)
   const [errorServidor, setErrorServidor] = useState('')
 
   const [busqueda, establecerBusqueda] = useState('')
@@ -23,10 +22,7 @@ export default function PaginaUsuarios() {
   const [formulario, establecerFormulario] = useState(usuarioVacio)
   const [errores, establecerErrores] = useState({})
 
-  const esModoReal = modoDemostracion === false
-
-  const cargarUsuarios = async () => {
-    if (!esModoReal) return
+  const cargarUsuarios = useCallback(async (signal) => {
     setCargando(true)
     setErrorServidor('')
     try {
@@ -35,9 +31,11 @@ export default function PaginaUsuarios() {
           search: busqueda || undefined,
           rol: rolFiltro !== 'Todos' ? rolFiltro : undefined,
           size: 50
-        }
+        },
+        signal
       })
 
+      if (signal?.aborted) return
       const mapeados = (res.data?.content || []).map((u) => ({
         id: u.id,
         name: u.nombreCompleto,
@@ -49,29 +47,23 @@ export default function PaginaUsuarios() {
         lastAccess: u.ultimoAcceso ? new Date(u.ultimoAcceso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Sin accesos'
       }))
 
-      setUsuariosReales(mapeados)
+      setUsuarios(mapeados)
     } catch (err) {
+      if (signal?.aborted) return
       console.error('Error al cargar usuarios:', err)
       setErrorServidor(err.response?.data?.mensaje || 'Error al conectar con el servidor para cargar usuarios.')
     } finally {
-      setCargando(false)
+      if (!signal?.aborted) setCargando(false)
     }
-  }
+  }, [busqueda, rolFiltro])
 
   useEffect(() => {
-    cargarUsuarios()
-  }, [esModoReal, busqueda, rolFiltro])
-
-  const usuarios = esModoReal ? usuariosReales : usuariosDemo
-
-  const visibles = useMemo(() => {
-    if (esModoReal) return usuarios
-    return usuarios.filter(
-      (usuario) =>
-        `${usuario.name} ${usuario.email}`.toLowerCase().includes(busqueda.toLowerCase()) &&
-        (rolFiltro === 'Todos' || usuario.role === rolFiltro)
-    )
-  }, [usuarios, busqueda, rolFiltro, esModoReal])
+    const controlador = new AbortController()
+    Promise.resolve().then(() => {
+      if (!controlador.signal.aborted) cargarUsuarios(controlador.signal)
+    })
+    return () => controlador.abort()
+  }, [cargarUsuarios])
 
   function abrir(usuario) {
     establecerFormulario(usuario ? { ...usuario, password: '' } : usuarioVacio)
@@ -91,6 +83,7 @@ export default function PaginaUsuarios() {
         return 'Ese correo ya está registrado.'
       }
     }
+    if (nombre === 'password' && texto) return validarContrasena(texto)
     return ''
   }
 
@@ -105,6 +98,11 @@ export default function PaginaUsuarios() {
     const datos = normalizarDatosFormulario(evento.currentTarget)
     const camposValidar = ['name', 'email']
     if (datos.phone) camposValidar.push('phone')
+    if (datos.password) camposValidar.push('password')
+    if (modal === 'nuevo' && !datos.password) {
+      establecerErrores((actuales) => ({ ...actuales, password: 'Escribe una contraseña válida.' }))
+      return
+    }
 
     const erroresValidacion = Object.fromEntries(
       camposValidar.map((campo) => [campo, validarCampo(campo, datos[campo])]).filter(([, error]) => error)
@@ -112,52 +110,37 @@ export default function PaginaUsuarios() {
     establecerErrores(erroresValidacion)
     if (Object.keys(erroresValidacion).length) return
 
-    if (esModoReal) {
-      const payload = {
-        nombreCompleto: datos.name,
-        email: datos.email,
-        telefono: datos.phone || '',
-        departamento: datos.department || '',
-        rol: datos.role || 'PATIENT',
-        activo: datos.status === 'Activo',
-        password: datos.password || undefined
-      }
+    const payload = {
+      nombreCompleto: datos.name,
+      email: datos.email,
+      telefono: datos.phone || '',
+      departamento: datos.department || '',
+      rol: datos.role || formulario.role || 'PATIENT',
+      activo: datos.status === 'Activo',
+      password: datos.password || undefined
+    }
 
-      try {
-        if (modal === 'editar') {
-          await axiosClient.put(`/usuarios/${formulario.id}`, payload)
-        } else {
-          await axiosClient.post('/usuarios', payload)
-        }
-        await cargarUsuarios()
-        establecerModal(null)
-      } catch (err) {
-        console.error('Error al guardar usuario:', err)
-        setErrorServidor(err.response?.data?.mensaje || err.response?.data?.message || 'Error al guardar el usuario.')
-      }
-    } else {
+    try {
       if (modal === 'editar') {
-        establecerUsuariosDemo((lista) => lista.map((u) => (u.id === formulario.id ? { ...u, ...datos } : u)))
+        await axiosClient.put(`/usuarios/${formulario.id}`, payload)
       } else {
-        establecerUsuariosDemo((lista) => [{ ...datos, id: `U-${String(Date.now()).slice(-4)}` }, ...lista])
+        await axiosClient.post('/usuarios', payload)
       }
+      await cargarUsuarios()
       establecerModal(null)
+    } catch (err) {
+      console.error('Error al guardar usuario:', err)
+      setErrorServidor(err.response?.data?.mensaje || err.response?.data?.message || 'Error al guardar el usuario.')
     }
   }
 
   async function cambiarEstado(usuario) {
-    if (esModoReal) {
-      try {
-        await axiosClient.patch(`/usuarios/${usuario.id}/estado`)
-        await cargarUsuarios()
-      } catch (err) {
-        console.error('Error al cambiar estado de usuario:', err)
-        alert(err.response?.data?.mensaje || 'Error al cambiar estado del usuario.')
-      }
-    } else {
-      establecerUsuariosDemo((lista) =>
-        lista.map((item) => (item.id === usuario.id ? { ...item, status: item.status === 'Activo' ? 'Suspendido' : 'Activo' } : item))
-      )
+    try {
+      await axiosClient.patch(`/usuarios/${usuario.id}/estado`)
+      await cargarUsuarios()
+    } catch (err) {
+      console.error('Error al cambiar estado de usuario:', err)
+      setErrorServidor(err.response?.data?.mensaje || 'Error al cambiar estado del usuario.')
     }
   }
 
@@ -216,7 +199,7 @@ export default function PaginaUsuarios() {
         </div>
 
         {cargando ? (
-          <div className="estado-vacio">Cargando usuarios desde la base de datos…</div>
+          <div className="estado-vacio">Cargando usuarios…</div>
         ) : (
           <div className="desplazamiento-tabla">
             <table className="tabla-datos">
@@ -231,7 +214,7 @@ export default function PaginaUsuarios() {
                 </tr>
               </thead>
               <tbody>
-                {visibles.map((usuario) => (
+                {usuarios.map((usuario) => (
                   <tr key={usuario.id}>
                     <td>
                       <span className="celda-paciente">
@@ -273,7 +256,7 @@ export default function PaginaUsuarios() {
                 ))}
               </tbody>
             </table>
-            {!visibles.length && <div className="estado-vacio">No encontramos cuentas con esos filtros.</div>}
+            {!usuarios.length && <div className="estado-vacio">No encontramos cuentas con esos filtros.</div>}
           </div>
         )}
       </section>
@@ -298,8 +281,9 @@ export default function PaginaUsuarios() {
             </label>
             {modal === 'nuevo' && (
               <label>
-                Contraseña inicial (opcional: por defecto Vitacare123!)
-                <input name="password" type="password" placeholder="Vitacare123!" />
+                Contraseña inicial
+                <input name="password" type="password" onChange={gestionarCambio} aria-invalid={Boolean(errores.password)} />
+                {errores.password && <small className="error-campo">{errores.password}</small>}
               </label>
             )}
             <label>
@@ -311,14 +295,16 @@ export default function PaginaUsuarios() {
               Área o departamento
               <input name="department" defaultValue={formulario.department} />
             </label>
-            <label>
-              Rol
-              <select name="role" defaultValue={formulario.role}>
-                <option value="PATIENT">Paciente</option>
-                <option value="DOCTOR">Médico</option>
-                <option value="ADMIN">Administrador</option>
-              </select>
-            </label>
+            {(modal === 'nuevo' || String(formulario.id) !== String(user?.id)) && (
+              <label>
+                Rol
+                <select name="role" defaultValue={formulario.role}>
+                  <option value="PATIENT">Paciente</option>
+                  <option value="DOCTOR">Médico</option>
+                  <option value="ADMIN">Administrador</option>
+                </select>
+              </label>
+            )}
             <label>
               Estado
               <select name="status" defaultValue={formulario.status}>

@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import Icono from '../components/Icono.jsx'
 import ModalFormulario from '../components/ModalFormulario.jsx'
-import { useDatosDemostracion } from '../context/useDatosDemostracion.js'
-import { obtenerFechaLocal } from '../utilidades/fechas.js'
 import { normalizarDatosFormulario } from '../utilidades/validacionesFormulario.js'
 import axiosClient from '../config/axiosClient'
 
@@ -23,23 +21,14 @@ function fechaLegible(fecha) {
 }
 
 export default function PaginaExpedientes() {
-  const { user, modoDemostracion } = useOutletContext()
-  const {
-    pacientes: pacientesDemo,
-    expedientes: expedientesDemo,
-    establecerExpedientes: establecerExpedientesDemo,
-    medicos: medicosDemo
-  } = useDatosDemostracion()
-
-  const esModoReal = modoDemostracion === false
+  const { user } = useOutletContext()
   const esPaciente = user?.role === 'PATIENT'
 
-  // Estados para datos reales
-  const [pacientesReales, setPacientesReales] = useState([])
-  const [medicosReales, setMedicosReales] = useState([])
+  const [pacientes, setPacientes] = useState([])
+  const [medicos, setMedicos] = useState([])
   const [expedientesResumen, setExpedientesResumen] = useState([])
-  const [expedienteDetalleReal, setExpedienteDetalleReal] = useState(null)
-  const [cargandoLista, setCargandoLista] = useState(esModoReal)
+  const [expedienteDetalle, setExpedienteDetalle] = useState(null)
+  const [cargandoLista, setCargandoLista] = useState(true)
   const [cargandoDetalle, setCargandoDetalle] = useState(false)
   const [errorServidor, setErrorServidor] = useState('')
 
@@ -48,99 +37,142 @@ export default function PaginaExpedientes() {
   const [modal, establecerModal] = useState(false)
   const [errores, establecerErrores] = useState({})
 
-  // Cargar lista de pacientes, médicos y expedientes reales
-  const cargarDatos = async () => {
-    if (!esModoReal) return
+  
+  const cargarDatos = useCallback(async (signal) => {
     setCargandoLista(true)
     setErrorServidor('')
     try {
-      const [resPacientes, resMedicos, resExpedientes] = await Promise.all([
-        axiosClient.get('/pacientes', { params: { size: 100 } }),
-        axiosClient.get('/medicos', { params: { size: 100 } }).catch(() => ({ data: { content: [] } })),
-        axiosClient.get('/expedientes').catch(() => ({ data: [] }))
-      ])
-
-      const pacientesMap = (resPacientes.data?.content || []).map((p) => {
-        let edad = ''
-        if (p.fechaNacimiento) {
-          const hoy = new Date()
-          const nac = new Date(p.fechaNacimiento)
-          edad = hoy.getFullYear() - nac.getFullYear()
-        }
-        return {
-          id: p.id,
-          expediente: `EXP-${String(p.id).padStart(4, '0')}`,
-          name: p.nombreCompleto,
-          email: p.email,
-          phone: p.telefono || '',
-          dateOfBirth: p.fechaNacimiento || '',
+      if (esPaciente) {
+        const [resPerfil, resExpediente] = await Promise.all([
+          axiosClient.get('/usuarios/me', { signal }),
+          axiosClient.get('/expedientes/mi-expediente', { signal })
+        ])
+        if (signal?.aborted) return
+        const perfil = resPerfil.data
+        const expediente = resExpediente.data
+        const nacimiento = perfil.fechaNacimiento ? new Date(`${perfil.fechaNacimiento}T12:00:00`) : null
+        const edad = nacimiento ? new Date().getFullYear() - nacimiento.getFullYear() : ''
+        const propio = {
+          id: expediente.patientId,
+          expediente: `EXP-${String(expediente.patientId).padStart(4, '0')}`,
+          name: perfil.nombreCompleto || expediente.patientName || user?.name || '',
+          email: perfil.email || user?.email || '',
+          phone: perfil.telefono || '',
+          dateOfBirth: perfil.fechaNacimiento || '',
           age: edad,
-          sex: p.sexo || '',
-          maritalStatus: p.estadoCivil || '',
-          occupation: p.ocupacion || '',
-          address: p.direccion || '',
-          bloodType: p.tipoSangre || '',
-          emergencyContact: p.contactoEmergenciaNombre || '',
-          emergencyPhone: p.contactoEmergenciaTelefono || '',
-          insurance: p.tipoSeguro || '',
-          nss: p.nss || ''
+          sex: perfil.sexo || '',
+          maritalStatus: perfil.estadoCivil || '',
+          occupation: perfil.ocupacion || '',
+          address: perfil.direccion || '',
+          bloodType: perfil.tipoSangre || '',
+          emergencyContact: perfil.contactoEmergenciaNombre || '',
+          emergencyPhone: perfil.contactoEmergenciaTelefono || '',
+          insurance: perfil.tipoSeguro || '',
+          nss: perfil.nss || ''
         }
-      })
-
-      const medicosMap = (resMedicos.data?.content || []).map((m) => ({
-        id: m.id,
-        name: m.nombreCompleto,
-        specialty: 'Medicina General',
-        status: m.activo ? 'Activo' : 'Inactivo'
-      }))
-
-      setPacientesReales(pacientesMap)
-      setMedicosReales(medicosMap)
-      setExpedientesResumen(resExpedientes.data || [])
-
-      // Si el usuario es rol paciente, seleccionamos automáticamente su propio expediente
-      if (esPaciente && user?.patientId) {
-        const propio = pacientesMap.find((p) => String(p.id) === String(user.patientId))
-        if (propio) {
-          establecerPacienteActivo(propio)
-        }
+        setPacientes([propio])
+        setExpedientesResumen([expediente])
+        setExpedienteDetalle(expediente)
+        setMedicos(Array.from(
+          new Map((expediente.entradas || [])
+            .filter((entrada) => entrada.doctorId)
+            .map((entrada) => [String(entrada.doctorId), {
+              id: entrada.doctorId,
+              name: entrada.doctorName || 'Médico',
+              specialty: 'Medicina General',
+              status: 'Activo'
+            }])).values()
+        ))
+        establecerPacienteActivo(propio)
+      } else {
+        const [resPacientes, resMedicos, resExpedientes] = await Promise.all([
+          axiosClient.get('/pacientes', { params: { size: 100 }, signal }),
+          axiosClient.get('/medicos', { params: { size: 100 }, signal }).catch(() => ({ data: { content: [] } })),
+          axiosClient.get('/expedientes', { signal }).catch(() => ({ data: [] }))
+        ])
+        if (signal?.aborted) return
+        const pacientesMap = (resPacientes.data?.content || []).map((p) => {
+          let edad = ''
+          if (p.fechaNacimiento) {
+            const hoy = new Date()
+            const nac = new Date(p.fechaNacimiento)
+            edad = hoy.getFullYear() - nac.getFullYear()
+          }
+          return {
+            id: p.id,
+            expediente: `EXP-${String(p.id).padStart(4, '0')}`,
+            name: p.nombreCompleto,
+            email: p.email,
+            phone: p.telefono || '',
+            dateOfBirth: p.fechaNacimiento || '',
+            age: edad,
+            sex: p.sexo || '',
+            maritalStatus: p.estadoCivil || '',
+            occupation: p.ocupacion || '',
+            address: p.direccion || '',
+            bloodType: p.tipoSangre || '',
+            emergencyContact: p.contactoEmergenciaNombre || '',
+            emergencyPhone: p.contactoEmergenciaTelefono || '',
+            insurance: p.tipoSeguro || '',
+            nss: p.nss || ''
+          }
+        })
+        const medicosMap = (resMedicos.data?.content || []).map((m) => ({
+          id: m.id,
+          name: m.nombreCompleto,
+          specialty: 'Medicina General',
+          status: m.activo ? 'Activo' : 'Inactivo'
+        }))
+        setPacientes(pacientesMap)
+        setMedicos(medicosMap)
+        setExpedientesResumen(resExpedientes.data || [])
       }
     } catch (err) {
+      if (signal?.aborted) return
       console.error('Error al cargar expedientes:', err)
       setErrorServidor('No se pudo conectar con el servidor para cargar los pacientes y expedientes.')
     } finally {
-      setCargandoLista(false)
+      if (!signal?.aborted) setCargandoLista(false)
     }
-  }
+  }, [esPaciente, user])
 
   useEffect(() => {
-    cargarDatos()
-  }, [esModoReal])
+    const controlador = new AbortController()
+    Promise.resolve().then(() => {
+      if (!controlador.signal.aborted) cargarDatos(controlador.signal)
+    })
+    return () => controlador.abort()
+  }, [cargarDatos])
 
-  // Cargar detalle del expediente seleccionado en modo real
-  const cargarExpedienteDetalle = async (pacienteId) => {
-    if (!esModoReal || !pacienteId) return
+ 
+  const cargarExpedienteDetalle = useCallback(async (pacienteId, signal) => {
+    if (!pacienteId) return
     setCargandoDetalle(true)
     setErrorServidor('')
     try {
-      const res = await axiosClient.get(`/expedientes/paciente/${pacienteId}`)
-      setExpedienteDetalleReal(res.data)
+      const res = await axiosClient.get(`/expedientes/paciente/${pacienteId}`, { signal })
+      if (signal?.aborted) return
+      setExpedienteDetalle(res.data)
     } catch (err) {
+      if (signal?.aborted) return
       console.error('Error al cargar detalle del expediente:', err)
       setErrorServidor('No se pudo cargar el detalle del expediente clínico.')
     } finally {
-      setCargandoDetalle(false)
+      if (!signal?.aborted) setCargandoDetalle(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    if (pacienteActivo && esModoReal) {
-      cargarExpedienteDetalle(pacienteActivo.id)
+    const controlador = new AbortController()
+    if (pacienteActivo && !esPaciente) {
+      Promise.resolve().then(() => {
+        if (!controlador.signal.aborted) {
+          cargarExpedienteDetalle(pacienteActivo.id, controlador.signal)
+        }
+      })
     }
-  }, [pacienteActivo, esModoReal])
-
-  const pacientes = esModoReal ? pacientesReales : pacientesDemo
-  const medicos = esModoReal ? medicosReales : medicosDemo
+    return () => controlador.abort()
+  }, [pacienteActivo, esPaciente, cargarExpedienteDetalle])
 
   const pacientesVisibles = pacientes.filter(
     (paciente) =>
@@ -150,9 +182,7 @@ export default function PaginaExpedientes() {
       (!esPaciente || String(paciente.id) === String(user?.patientId ?? ''))
   )
 
-  const expedienteActivo = esModoReal
-    ? expedienteDetalleReal ?? expedienteVacio
-    : expedientesDemo.find((item) => item.patientId === pacienteActivo?.id) ?? expedienteVacio
+  const expedienteActivo = expedienteDetalle ?? expedienteVacio
 
   function validarCampo(nombre, valor) {
     const texto = String(valor ?? '').trim()
@@ -179,40 +209,30 @@ export default function PaginaExpedientes() {
     establecerErrores(erroresValidacion)
     if (Object.keys(erroresValidacion).length) return
 
-    if (esModoReal) {
-      const payload = {
-        doctorId: Number(datos.doctorId),
-        motivo: datos.motivo,
-        diagnostico: datos.diagnostico,
-        tratamiento: datos.tratamiento,
-        medicamentos: datos.medicamentos || '',
-        estudios: datos.estudios || '',
-        proximaRevision: datos.proximaRevision || null,
-        observaciones: datos.observaciones || '',
-        presion: datos.presion || '',
-        pulso: datos.pulso ? Number(datos.pulso) : null,
-        temperatura: datos.temperatura ? Number(datos.temperatura) : null,
-        peso: datos.peso ? Number(datos.peso) : null,
-        estatura: datos.estatura ? Number(datos.estatura) : null
-      }
+    const payload = {
+      doctorId: Number(datos.doctorId),
+      motivo: datos.motivo,
+      diagnostico: datos.diagnostico,
+      tratamiento: datos.tratamiento,
+      medicamentos: datos.medicamentos || '',
+      estudios: datos.estudios || '',
+      proximaRevision: datos.proximaRevision || null,
+      observaciones: datos.observaciones || '',
+      presion: datos.presion || '',
+      pulso: datos.pulso ? Number(datos.pulso) : null,
+      temperatura: datos.temperatura ? Number(datos.temperatura) : null,
+      peso: datos.peso ? Number(datos.peso) : null,
+      estatura: datos.estatura ? Number(datos.estatura) : null
+    }
 
-      try {
-        const res = await axiosClient.post(`/expedientes/paciente/${pacienteActivo.id}/consultas`, payload)
-        setExpedienteDetalleReal(res.data)
-        establecerModal(false)
-        cargarDatos() // Refresca contadores
-      } catch (err) {
-        console.error('Error al agregar consulta:', err)
-        setErrorServidor(err.response?.data?.mensaje || err.response?.data?.message || 'Error al guardar la consulta clínica.')
-      }
-    } else {
-      const nuevaEntrada = { ...datos, id: `E-${pacienteActivo.id}-${expedienteActivo.entradas.length + 1}`, fecha: obtenerFechaLocal() }
-      establecerExpedientesDemo((actuales) =>
-        actuales.some((item) => item.patientId === pacienteActivo.id)
-          ? actuales.map((item) => (item.patientId === pacienteActivo.id ? { ...item, entradas: [nuevaEntrada, ...item.entradas] } : item))
-          : [{ patientId: pacienteActivo.id, ...expedienteVacio, entradas: [nuevaEntrada] }, ...actuales]
-      )
+    try {
+      const res = await axiosClient.post(`/expedientes/paciente/${pacienteActivo.id}/consultas`, payload)
+      setExpedienteDetalle(res.data)
       establecerModal(false)
+      cargarDatos()
+    } catch (err) {
+      console.error('Error al agregar consulta:', err)
+      setErrorServidor(err.response?.data?.mensaje || err.response?.data?.message || 'Error al guardar la consulta clínica.')
     }
   }
 
@@ -221,31 +241,22 @@ export default function PaginaExpedientes() {
     setErrorServidor('')
     const datos = normalizarDatosFormulario(evento.currentTarget)
 
-    if (esModoReal) {
-      const payload = {
-        antecedentes: datos.antecedentes,
-        alergias: datos.alergias,
-        padecimientos: datos.padecimientos,
-        medicamentos: datos.medicamentos,
-        cirugias: datos.cirugias,
-        antecedentesFamiliares: datos.antecedentesFamiliares
-      }
+    const payload = {
+      antecedentes: datos.antecedentes,
+      alergias: datos.alergias,
+      padecimientos: datos.padecimientos,
+      medicamentos: datos.medicamentos,
+      cirugias: datos.cirugias,
+      antecedentesFamiliares: datos.antecedentesFamiliares
+    }
 
-      try {
-        const res = await axiosClient.put(`/expedientes/paciente/${pacienteActivo.id}`, payload)
-        setExpedienteDetalleReal(res.data)
-        establecerModal(false)
-      } catch (err) {
-        console.error('Error al actualizar resumen clínico:', err)
-        setErrorServidor(err.response?.data?.mensaje || err.response?.data?.message || 'Error al guardar antecedentes médicos.')
-      }
-    } else {
-      establecerExpedientesDemo((actuales) =>
-        actuales.some((item) => item.patientId === pacienteActivo.id)
-          ? actuales.map((item) => (item.patientId === pacienteActivo.id ? { ...item, ...datos } : item))
-          : [{ patientId: pacienteActivo.id, ...expedienteVacio, ...datos }, ...actuales]
-      )
+    try {
+      const res = await axiosClient.put(`/expedientes/paciente/${pacienteActivo.id}`, payload)
+      setExpedienteDetalle(res.data)
       establecerModal(false)
+    } catch (err) {
+      console.error('Error al actualizar resumen clínico:', err)
+      setErrorServidor(err.response?.data?.mensaje || err.response?.data?.message || 'Error al guardar antecedentes médicos.')
     }
   }
 
@@ -276,17 +287,10 @@ export default function PaginaExpedientes() {
     : []
 
   const obtenerResumenPaciente = (pacienteId) => {
-    if (esModoReal) {
-      const exp = expedientesResumen.find((e) => String(e.patientId) === String(pacienteId))
-      return {
-        conteoConsultas: exp?.entradas?.length ?? 0,
-        ultimaVisita: exp?.ultimaVisita || null
-      }
-    }
-    const exp = expedientesDemo.find((e) => e.patientId === pacienteId)
+    const exp = expedientesResumen.find((e) => String(e.patientId) === String(pacienteId))
     return {
       conteoConsultas: exp?.entradas?.length ?? 0,
-      ultimaVisita: exp?.entradas?.[0]?.fecha || null
+      ultimaVisita: exp?.ultimaVisita || null
     }
   }
 
@@ -321,7 +325,7 @@ export default function PaginaExpedientes() {
           </div>
 
           {cargandoLista ? (
-            <div className="estado-vacio">Cargando expedientes desde la base de datos…</div>
+            <div className="estado-vacio">Cargando expedientes…</div>
           ) : (
             <div className="lista-expedientes">
               {pacientesVisibles.map((paciente) => {

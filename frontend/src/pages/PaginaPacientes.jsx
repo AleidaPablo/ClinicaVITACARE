@@ -4,7 +4,7 @@ import axiosClient from '../config/axiosClient'
 import Icono from '../components/Icono.jsx'
 import EtiquetaEstado from '../components/EtiquetaEstado.jsx'
 import ModalFormulario from '../components/ModalFormulario.jsx'
-import { validarTelefono } from '../utilidades/validacionesFormulario.js'
+import { validarContrasena, validarCorreo, validarTelefono } from '../utilidades/validacionesFormulario.js'
 
 const pacienteVacio = {
   name: '',
@@ -39,18 +39,22 @@ export default function PaginaPacientes({ patientOnly = false }) {
   const [totalPaginas, setTotalPaginas] = useState(1)
   const [totalElementos, setTotalElementos] = useState(0)
 
-  // Estados de UI
+
   const [filtroEstado, establecerFiltroEstado] = useState('Todos')
   const [modal, establecerModal] = useState(null)
   const [formulario, establecerFormulario] = useState(pacienteVacio)
   const [errores, establecerErrores] = useState({})
+  const [errorServidor, establecerErrorServidor] = useState('')
 
   const esPaciente = patientOnly || user?.role === 'PATIENT'
 
   useEffect(() => {
-    if (esPaciente) return; // Si es paciente, no traemos toda la lista
+    if (esPaciente) return; 
 
+    const controlador = new AbortController()
     const fetchPacientes = async () => {
+      await Promise.resolve()
+      if (controlador.signal.aborted) return
       setCargando(true)
       try {
         const response = await axiosClient.get('/pacientes', {
@@ -58,12 +62,14 @@ export default function PaginaPacientes({ patientOnly = false }) {
             page: paginaActual,
             size: 5,
             search: busqueda
-          }
+          },
+          signal: controlador.signal
         })
 
-        // Mapeamos el DTO del backend al formato que espera tu interfaz
+        if (controlador.signal.aborted) return
+     
         const pacientesMapeados = response.data.content.map(p => {
-          // Calculamos edad a partir de la fecha de nacimiento (si existe)
+         
           let edad = ''
           if (p.fechaNacimiento) {
             const hoy = new Date()
@@ -97,17 +103,18 @@ export default function PaginaPacientes({ patientOnly = false }) {
         setTotalPaginas(response.data.totalPages)
         setTotalElementos(response.data.totalElements)
       } catch (error) {
+        if (controlador.signal.aborted) return
         console.error("Error al cargar pacientes", error)
       } finally {
-        setCargando(false)
+        if (!controlador.signal.aborted) setCargando(false)
       }
     }
 
     fetchPacientes()
+    return () => controlador.abort()
   }, [paginaActual, busqueda, esPaciente])
 
-  // --- VALIDACIÓN DEL FORMULARIO ---
-  function validarCampo(nombre, valor, pacienteId = modal?.paciente?.id) {
+  function validarCampo(nombre, valor) {
     const texto = String(valor ?? '').trim()
 
     if (nombre === 'name') {
@@ -126,10 +133,11 @@ export default function PaginaPacientes({ patientOnly = false }) {
     }
 
     if (nombre === 'email') {
-      if (!texto) return 'Escribe el correo electrónico.'
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(texto)) {
-        return 'Escribe un correo válido.'
-      }
+      return validarCorreo(valor)
+    }
+
+    if (nombre === 'password' && texto) {
+      return validarContrasena(valor)
     }
 
     return ''
@@ -137,7 +145,7 @@ export default function PaginaPacientes({ patientOnly = false }) {
 
   function cambiarCampo(evento) {
     const { name, value } = evento.target
-    if (['name', 'email', 'phone', 'emergencyPhone'].includes(name)) {
+    if (['name', 'email', 'phone', 'emergencyPhone', 'password'].includes(name)) {
       establecerErrores((actuales) => ({
         ...actuales,
         [name]: validarCampo(name, value)
@@ -145,7 +153,7 @@ export default function PaginaPacientes({ patientOnly = false }) {
     }
   }
 
-  // --- FILTRO LOCAL POR ESTADO (El buscador de texto ya lo hace el servidor) ---
+
   const pacientesVisibles = useMemo(() => {
     return pacientes.filter(paciente => {
       if (filtroEstado === 'Todos') return true;
@@ -159,7 +167,7 @@ export default function PaginaPacientes({ patientOnly = false }) {
     establecerModal(paciente ? { tipo: 'editar', paciente } : { tipo: 'nuevo' })
   }
 
-  // --- GUARDAR PACIENTE EN EL BACKEND ---
+  
   async function guardarPaciente(evento) {
     evento.preventDefault()
 
@@ -170,18 +178,24 @@ export default function PaginaPacientes({ patientOnly = false }) {
     )
 
     const erroresFormulario = Object.fromEntries(
-      ['name', 'email', 'phone', 'emergencyPhone']
+      ['name', 'email', 'phone', 'emergencyPhone', 'password']
         .map((nombre) => [nombre, validarCampo(nombre, valores[nombre])])
         .filter(([, mensaje]) => mensaje)
     )
+    if (modal.tipo === 'nuevo' && !valores.password) {
+      erroresFormulario.password = 'Escribe una contraseña válida.'
+    }
 
     establecerErrores(erroresFormulario)
     if (Object.keys(erroresFormulario).length) return
 
     try {
-      // Armamos el DTO que espera Spring Boot
+      
       const payload = {
-        usuarioId: modal.tipo === 'editar' ? modal.paciente.id : 2, // OJO: Requiere un usuarioId real (usamos el 2 de prueba)
+        nombreCompleto: valores.name,
+        email: valores.email,
+        password: valores.password || undefined,
+        telefono: valores.phone,
         fechaNacimiento: valores.dateOfBirth || null,
         sexo: valores.sex,
         estadoCivil: valores.maritalStatus,
@@ -200,16 +214,16 @@ export default function PaginaPacientes({ patientOnly = false }) {
         await axiosClient.post('/pacientes', payload)
       }
 
-      // Refrescamos la tabla
+
       setPaginaActual(0)
       establecerModal(null)
-      alert("Guardado exitosamente")
+      establecerErrorServidor('')
     } catch (error) {
-      alert("Error al guardar: " + (error.response?.data?.mensaje || error.message))
+      establecerErrorServidor(error.response?.data?.mensaje || 'Error al guardar el paciente.')
     }
   }
 
-  // --- VISTA PARA PACIENTES ---
+
   if (esPaciente) {
     return (
       <div className="pila-pagina">
@@ -219,7 +233,7 @@ export default function PaginaPacientes({ patientOnly = false }) {
             <p>Información de tu atención médica.</p>
           </div>
         </div>
-        <p className="nota-datos-demo">Consulta tu información personal y clínica.</p>
+        <p className="nota-pagina">Consulta tu información personal y clínica.</p>
         
         <section className="tarjeta-perfil-paciente">
           <span className="avatar-paciente-grande">{iniciales(user?.name)}</span>
@@ -234,7 +248,7 @@ export default function PaginaPacientes({ patientOnly = false }) {
     )
   }
 
-  // --- VISTA PARA ADMIN/DOCTOR ---
+  
   return (
     <div className="pila-pagina">
       <div className="encabezado-pagina">
@@ -247,7 +261,7 @@ export default function PaginaPacientes({ patientOnly = false }) {
         </button>
       </div>
 
-      <p className="nota-datos-demo">Consulta y administra el directorio de pacientes.</p>
+      <p className="nota-pagina">Consulta y administra el directorio de pacientes.</p>
 
       <section className="resumen-modulo-grid" aria-label="Resumen de pacientes">
         <article className="resumen-modulo-card">
@@ -284,7 +298,7 @@ export default function PaginaPacientes({ patientOnly = false }) {
               onChange={(evento) => {
                 const valor = evento.target.value
                 valor ? setParams({ search: valor }) : setParams({})
-                setPaginaActual(0) // Reiniciar a la primera página al buscar
+                setPaginaActual(0) 
               }}
               placeholder="Buscar por nombre, correo, expediente o NSS…"
               aria-label="Buscar paciente"
@@ -403,6 +417,7 @@ export default function PaginaPacientes({ patientOnly = false }) {
           alCerrar={() => establecerModal(null)}
         >
           <form className="formulario-modulo" onSubmit={guardarPaciente} noValidate>
+            {errorServidor && <p style={{ color: '#b42318', margin: '0 0 10px' }}>{errorServidor}</p>}
             <fieldset className="grupo-campos-clinicos">
               <legend>Datos personales</legend>
               <div className="campos-dos-columnas">
@@ -414,6 +429,12 @@ export default function PaginaPacientes({ patientOnly = false }) {
                   <input name="email" type="email" defaultValue={formulario.email} onChange={cambiarCampo} aria-invalid={Boolean(errores.email)} />
                   {errores.email && <small className="error-campo">{errores.email}</small>}
                 </label>
+                {modal.tipo === 'nuevo' && (
+                  <label>Contraseña
+                    <input name="password" type="password" onChange={cambiarCampo} aria-invalid={Boolean(errores.password)} />
+                    {errores.password && <small className="error-campo">{errores.password}</small>}
+                  </label>
+                )}
                 <label>Teléfono
                   <input name="phone" type="tel" maxLength={10} defaultValue={formulario.phone} onChange={cambiarCampo} aria-invalid={Boolean(errores.phone)} />
                   {errores.phone && <small className="error-campo">{errores.phone}</small>}

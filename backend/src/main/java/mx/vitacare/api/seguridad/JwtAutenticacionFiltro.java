@@ -12,11 +12,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @Component
 public class JwtAutenticacionFiltro extends OncePerRequestFilter {
+
+    private static final Set<String> ROLES_PERMITIDOS = Set.of("ADMIN", "DOCTOR", "PATIENT");
 
     private final JwtServicio jwtServicio;
 
@@ -44,12 +47,14 @@ public class JwtAutenticacionFiltro extends OncePerRequestFilter {
                 List<SimpleGrantedAuthority> autoridades =
                         convertirRolAAutoridades(rolReclamado);
 
-                UsernamePasswordAuthenticationToken autenticacion =
-                        new UsernamePasswordAuthenticationToken(
-                                nombreUsuario,
-                                null,
-                                autoridades);
-                SecurityContextHolder.getContext().setAuthentication(autenticacion);
+                if (!autoridades.isEmpty()) {
+                    UsernamePasswordAuthenticationToken autenticacion =
+                            new UsernamePasswordAuthenticationToken(
+                                    nombreUsuario,
+                                    null,
+                                    autoridades);
+                    SecurityContextHolder.getContext().setAuthentication(autenticacion);
+                }
             }
         }
 
@@ -58,10 +63,17 @@ public class JwtAutenticacionFiltro extends OncePerRequestFilter {
 
     private List<SimpleGrantedAuthority> convertirRolAAutoridades(Object rolReclamado) {
         if (!(rolReclamado instanceof String rol) || rol.isBlank()) {
-            return Collections.emptyList();
+            return List.of();
         }
 
-        String nombreRol = rol.startsWith("ROLE_") ? rol : "ROLE_" + rol;
-        return List.of(new SimpleGrantedAuthority(nombreRol));
+        String rolNormalizado = rol.trim().toUpperCase(Locale.ROOT);
+        if (rolNormalizado.startsWith("ROLE_")) {
+            rolNormalizado = rolNormalizado.substring(5);
+        }
+        if (!ROLES_PERMITIDOS.contains(rolNormalizado)) {
+            return List.of();
+        }
+
+        return List.of(new SimpleGrantedAuthority("ROLE_" + rolNormalizado));
     }
 }

@@ -2,6 +2,7 @@ package mx.vitacare.api.service;
 
 import mx.vitacare.api.dto.CitaRequestDTO;
 import mx.vitacare.api.dto.CitaResponseDTO;
+import mx.vitacare.api.exception.ConflictoException;
 import mx.vitacare.api.exception.RecursoNoEncontradoException;
 import mx.vitacare.api.model.Cita;
 import mx.vitacare.api.model.Medico;
@@ -13,6 +14,7 @@ import mx.vitacare.api.repository.PacienteRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +35,29 @@ public class CitaService {
     }
 
     @Transactional(readOnly = true)
-    public Page<CitaResponseDTO> listarPaginadas(Long pacienteId, Long medicoId, String estado, Pageable pageable) {
+    public Page<CitaResponseDTO> listarPaginadas(
+            Long pacienteId,
+            Long medicoId,
+            String estado,
+            Pageable pageable,
+            String correoUsuario,
+            String rol) {
+        if ("PATIENT".equals(rol)) {
+            pacienteId = pacienteRepository.findByUsuarioEmail(correoUsuario)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "No se encontró el perfil de paciente asociado."))
+                    .getId();
+            medicoId = null;
+        } else if ("DOCTOR".equals(rol)) {
+            medicoId = medicoRepository.findByUsuarioEmail(correoUsuario)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "No se encontró el perfil médico asociado."))
+                    .getId();
+            pacienteId = null;
+        } else if (!"ADMIN".equals(rol)) {
+            throw new AccessDeniedException("El rol no tiene acceso a las citas.");
+        }
+
         Specification<Cita> spec = CitaSpecs.todas();
         if (pacienteId != null) {
             spec = spec.and(CitaSpecs.dePaciente(pacienteId));
@@ -47,23 +71,31 @@ public class CitaService {
         return citaRepository.findAll(spec, pageable).map(this::convertirADto);
     }
 
-    @Transactional(readOnly = true)
-    public Page<CitaResponseDTO> listarPaginadas(Pageable pageable) {
-        return listarPaginadas(null, null, null, pageable);
-    }
-
     @Transactional
-    public CitaResponseDTO cambiarEstado(Long id, String nuevoEstado) {
+    public CitaResponseDTO cambiarEstado(Long id, String nuevoEstado, String correoUsuario, String rol) {
         Cita cita = citaRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Cita no encontrada con ID: " + id));
+        validarPropiedad(cita, correoUsuario, rol);
+        if ("PATIENT".equals(rol) && !"CANCELADA".equalsIgnoreCase(nuevoEstado)) {
+            throw new AccessDeniedException("El paciente solo puede cancelar sus propias citas.");
+        }
         cita.setEstado(nuevoEstado.toUpperCase());
         return convertirADto(citaRepository.save(cita));
     }
 
     @Transactional
-    public CitaResponseDTO actualizar(Long id, CitaRequestDTO dto) {
+    public CitaResponseDTO actualizar(Long id, CitaRequestDTO dto, String correoUsuario, String rol) {
         Cita cita = citaRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Cita no encontrada con ID: " + id));
+        validarPropiedad(cita, correoUsuario, rol);
+        if ("DOCTOR".equals(rol)
+                && ((dto.getPacienteId() != null
+                        && !dto.getPacienteId().equals(cita.getPaciente().getId()))
+                || (dto.getMedicoId() != null
+                        && !dto.getMedicoId().equals(cita.getMedico().getId())))) {
+            throw new AccessDeniedException(
+                    "Un médico no puede reasignar una cita a otro paciente o médico.");
+        }
 
         if (dto.getPacienteId() != null) {
             Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
@@ -98,20 +130,46 @@ public class CitaService {
     }
 
     @Transactional
-    public CitaResponseDTO crear(CitaRequestDTO dto) {
-        Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
-                .orElseThrow(() -> new RuntimeException("Paciente no encontrado"));
-        
-        Medico medico = medicoRepository.findById(dto.getMedicoId())
-                .orElseThrow(() -> new RuntimeException("Médico no encontrado"));
+    public CitaResponseDTO crear(CitaRequestDTO dto, String correoUsuario, String rol) {
+        Long pacienteId = dto.getPacienteId();
+        Long medicoId = dto.getMedicoId();
+        if ("PATIENT".equals(rol)) {
+            pacienteId = pacienteRepository.findByUsuarioEmail(correoUsuario)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "No se encontró el perfil de paciente asociado."))
+                    .getId();
+        } else if ("DOCTOR".equals(rol)) {
+            medicoId = medicoRepository.findByUsuarioEmail(correoUsuario)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "No se encontró el perfil médico asociado."))
+                    .getId();
+            if (pacienteId == null
+                    || !citaRepository.existsByPacienteIdAndMedicoId(pacienteId, medicoId)) {
+                throw new AccessDeniedException(
+                        "Solo puedes agendar citas para pacientes que ya tienes asignados.");
+            }
+        } else if (!"ADMIN".equals(rol)) {
+            throw new AccessDeniedException("El rol no tiene permiso para crear citas.");
+        }
 
-        // Validación manual para evitar empalmes (el trigger de BD es el segundo filtro)
+        if (pacienteId == null) {
+            throw new RecursoNoEncontradoException("Paciente no encontrado.");
+        }
+        if (medicoId == null) {
+            throw new RecursoNoEncontradoException("Médico no encontrado.");
+        }
+
+        Paciente paciente = pacienteRepository.findById(pacienteId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Paciente no encontrado"));
+        Medico medico = medicoRepository.findById(medicoId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Médico no encontrado"));
+
         LocalDateTime inicio = dto.getFechaHora();
         LocalDateTime fin = inicio.plusMinutes(dto.getDuracion());
         List<Cita> empalmes = citaRepository.findByMedicoIdAndFechaHoraBetween(medico.getId(), inicio.minusMinutes(dto.getDuracion()), fin);
         
         if (!empalmes.isEmpty()) {
-            throw new RuntimeException("El médico ya tiene una cita en ese horario");
+            throw new ConflictoException("El médico ya tiene una cita en ese horario");
         }
 
         Cita cita = new Cita();
@@ -127,6 +185,33 @@ public class CitaService {
 
         Cita guardada = citaRepository.save(cita);
         return convertirADto(guardada);
+    }
+
+    private void validarPropiedad(Cita cita, String correoUsuario, String rol) {
+        if ("ADMIN".equals(rol)) {
+            return;
+        }
+        if ("PATIENT".equals(rol)) {
+            Long pacienteId = pacienteRepository.findByUsuarioEmail(correoUsuario)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "No se encontró el perfil de paciente asociado."))
+                    .getId();
+            if (!cita.getPaciente().getId().equals(pacienteId)) {
+                throw new AccessDeniedException("No tienes permiso para modificar esta cita.");
+            }
+            return;
+        }
+        if ("DOCTOR".equals(rol)) {
+            Long medicoId = medicoRepository.findByUsuarioEmail(correoUsuario)
+                    .orElseThrow(() -> new RecursoNoEncontradoException(
+                            "No se encontró el perfil médico asociado."))
+                    .getId();
+            if (!cita.getMedico().getId().equals(medicoId)) {
+                throw new AccessDeniedException("No tienes permiso para modificar esta cita.");
+            }
+            return;
+        }
+        throw new AccessDeniedException("El rol no tiene acceso a esta cita.");
     }
 
     private CitaResponseDTO convertirADto(Cita cita) {

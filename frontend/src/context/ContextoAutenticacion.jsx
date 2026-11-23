@@ -1,23 +1,30 @@
-import { useCallback, useMemo, useState, useContext } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { contextoAutenticacion } from './ContextoAutenticacionCompartido.js'
 
 export function ProveedorAutenticacion({ children }) {
   const [session, setSession] = useState(() => {
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('usuario');
-    if (token && user) {
-      return { accessToken: token, user: JSON.parse(user) };
+    try {
+      const token = localStorage.getItem('token')
+      const usuarioGuardado = localStorage.getItem('usuario')
+      if (token && usuarioGuardado) {
+        return { accessToken: token, user: JSON.parse(usuarioGuardado) }
+      }
+    } catch {
+      localStorage.removeItem('token')
+      localStorage.removeItem('usuario')
     }
-    return null;
+    return null
   })
 
   const establishSession = useCallback(({ user, accessToken }) => {
+    localStorage.setItem('token', accessToken)
+    localStorage.setItem('usuario', JSON.stringify(user))
     setSession({ user, accessToken })
   }, [])
 
   const clearSession = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
+    localStorage.removeItem('token')
+    localStorage.removeItem('usuario')
     setSession(null)
   }, [])
 
@@ -30,8 +37,4 @@ export function ProveedorAutenticacion({ children }) {
   }), [session, establishSession, clearSession])
 
   return <contextoAutenticacion.Provider value={value}>{children}</contextoAutenticacion.Provider>
-}
-
-export function useAutenticacion() {
-  return useContext(contextoAutenticacion);
 }

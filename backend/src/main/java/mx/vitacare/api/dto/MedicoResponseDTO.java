@@ -24,8 +24,6 @@ public class MedicoResponseDTO {
         this.disponibilidad = disponibilidad;
         this.activo = activo;
     }
-
-    // Getters
     public Long getId() { return id; }
     public String getNombreCompleto() { return nombreCompleto; }
     public String getEmail() { return email; }

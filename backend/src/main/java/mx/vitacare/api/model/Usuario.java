@@ -51,7 +51,7 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private Boolean activo = true;
 
-    // ¡AQUÍ ESTÁN LAS ANOTACIONES QUE FALTABAN!
+    
     @CreationTimestamp 
     @Column(name = "creado_en", updatable = false)
     private LocalDateTime creadoEn;
@@ -60,7 +60,7 @@ public class Usuario implements UserDetails {
     @Column(name = "actualizado_en")
     private LocalDateTime actualizadoEn;
 
-    // --- MÉTODOS OBLIGATORIOS DE USERDETAILS ---
+    
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(rol.getNombre())); 

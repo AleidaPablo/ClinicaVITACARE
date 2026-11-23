@@ -19,7 +19,6 @@ public class PerfilRequestDTO {
     @Size(max = 300, message = "La URL de la foto no puede exceder 300 caracteres")
     private String fotoUrl;
 
-    // Campos de paciente
     private LocalDate fechaNacimiento;
     private String sexo;
     private String estadoCivil;

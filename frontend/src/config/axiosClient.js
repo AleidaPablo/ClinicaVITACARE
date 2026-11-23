@@ -1,35 +1,35 @@
-import axios from 'axios';
+import axios from 'axios'
 
 const axiosClient = axios.create({
-    baseURL: 'http://localhost:8080/api',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
     headers: {
         'Content-Type': 'application/json',
     },
-});
+})
 
 axiosClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('token')
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+            config.headers.Authorization = `Bearer ${token}`
         }
-        return config;
+        return config
     },
-    (error) => Promise.reject(error)
-);
+    (error) => Promise.reject(error),
+)
 
 axiosClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('usuario');
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token')
+            localStorage.removeItem('usuario')
             if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
+                window.location.replace('/login')
             }
         }
-        return Promise.reject(error);
-    }
-);
+        return Promise.reject(error)
+    },
+)
 
-export default axiosClient;
+export default axiosClient

@@ -20,9 +20,28 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
            "LOWER(p.nss) LIKE LOWER(CONCAT('%', :search, '%'))")
     Page<Paciente> buscarPorTexto(@Param("search") String search, Pageable pageable);
 
+    @Query(value = "SELECT DISTINCT p FROM Cita c JOIN c.paciente p JOIN p.usuario u " +
+            "WHERE c.medico.id = :medicoId AND " +
+            "(:search IS NULL OR :search = '' OR " +
+            "LOWER(u.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(p.nss) LIKE LOWER(CONCAT('%', :search, '%')))",
+            countQuery = "SELECT COUNT(DISTINCT p.id) FROM Cita c JOIN c.paciente p JOIN p.usuario u " +
+                    "WHERE c.medico.id = :medicoId AND " +
+                    "(:search IS NULL OR :search = '' OR " +
+                    "LOWER(u.nombreCompleto) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                    "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                    "LOWER(p.nss) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Paciente> buscarPorMedicoYTexto(
+            @Param("medicoId") Long medicoId,
+            @Param("search") String search,
+            Pageable pageable);
+
     long countByActivoTrue();
 
     Optional<Paciente> findByUsuarioEmail(String email);
+
+    Optional<Paciente> findByUsuarioId(Long usuarioId);
 
     List<Paciente> findByActivoTrue();
 }

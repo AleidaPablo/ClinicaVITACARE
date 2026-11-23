@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import fotoInicio from '../assets/foto-consulta.png'
-import { validarContrasena, validarCorreo } from '../utilidades/validacionesFormulario.js'
+import { validarCorreo } from '../utilidades/validacionesFormulario.js'
 
 function Marca() {
   return (
@@ -53,8 +53,7 @@ function validarCredenciales(email, password) {
   const errorCorreo = validarCorreo(email)
   if (errorCorreo) errors.email = errorCorreo.replace('Escribe', 'Ingresa')
 
-  const errorContrasena = validarContrasena(password)
-  if (errorContrasena) errors.password = errorContrasena
+  if (!String(password ?? '').trim()) errors.password = 'Ingresa tu contraseña.'
 
   return errors
 }
@@ -164,7 +163,10 @@ export default function InicioSesion({ onLogin }) {
                   onChange={(event) => {
                     const valor = event.target.value
                     setPassword(valor)
-                    setFieldErrors((current) => ({ ...current, password: valor ? validarContrasena(valor) : current.password ? 'Ingresa tu contraseña.' : '' }))
+                    setFieldErrors((current) => ({
+                      ...current,
+                      password: valor.trim() ? '' : current.password ? 'Ingresa tu contraseña.' : '',
+                    }))
                   }}
                 />
                 <button
@@ -177,7 +179,7 @@ export default function InicioSesion({ onLogin }) {
                   <VisibilityIcono visible={mostrarContrasena} />
                 </button>
               </div>
-              <p className="ayuda-contrasena" id="password-ayuda">Mínimo 8 caracteres, una mayúscula, un número y un símbolo.</p>
+              <p className="ayuda-contrasena" id="password-ayuda">Ingresa la contraseña de tu cuenta.</p>
               {erroresCampos.password && <p className="error-campo" id="password-error">{erroresCampos.password}</p>}
             </div>
 
@@ -204,7 +206,6 @@ export default function InicioSesion({ onLogin }) {
               {estaEnviando ? <><span className="indicador-carga" aria-hidden="true" /> Iniciando sesión...</> : <>Entrar al sistema <span aria-hidden="true">→</span></>}
             </button>
           </form>
-          <p className="enlace-demo-inicio">¿Quieres recorrer la interfaz? <Link to="/demo">Explorar perfiles</Link></p>
         </div>
       </section>
     </main>

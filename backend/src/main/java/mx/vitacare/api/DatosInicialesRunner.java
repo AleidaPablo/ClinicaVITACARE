@@ -20,13 +20,13 @@ public class DatosInicialesRunner implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PacienteRepository pacienteRepository;
-    private final MedicoRepository medicoRepository; // <-- AGREGADO
+    private final MedicoRepository medicoRepository; 
     private final PasswordEncoder passwordEncoder;
 
     public DatosInicialesRunner(UsuarioRepository usuarioRepository, 
                                 RolRepository rolRepository, 
                                 PacienteRepository pacienteRepository, 
-                                MedicoRepository medicoRepository, // <-- AGREGADO
+                                MedicoRepository medicoRepository, 
                                 PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
@@ -47,7 +47,7 @@ public class DatosInicialesRunner implements CommandLineRunner {
         Rol rolDoctor = rolRepository.findByNombre("DOCTOR").orElseThrow();
         Rol rolPaciente = rolRepository.findByNombre("PATIENT").orElseThrow();
 
-        // Admin
+        
         Usuario admin = new Usuario();
         admin.setNombreCompleto("Administrador VITACARE");
         admin.setEmail("admin@vitacare.com");
@@ -57,7 +57,7 @@ public class DatosInicialesRunner implements CommandLineRunner {
         admin.setActivo(true);
         usuarioRepository.save(admin);
 
-        // Doctores y sus perfiles
+        
         for (int i = 1; i <= 3; i++) {
             Usuario doctorUser = new Usuario();
             doctorUser.setNombreCompleto("Dr. Prueba " + i);
@@ -74,10 +74,10 @@ public class DatosInicialesRunner implements CommandLineRunner {
             medico.setAnosExperiencia(i * 5);
             medico.setConsultorio("Consultorio " + i);
             medico.setActivo(true);
-            medicoRepository.save(medico); // <-- Guardamos el médico
+            medicoRepository.save(medico); 
         }
 
-        // Pacientes
+        
         for (int i = 1; i <= 10; i++) {
             Usuario pacienteUser = new Usuario();
             pacienteUser.setNombreCompleto("Paciente de Prueba " + i);

@@ -19,7 +19,6 @@ public class PacienteResponseDTO {
     private String nss;
     private Boolean activo;
 
-    // Constructor
     public PacienteResponseDTO(Long id, String nombreCompleto, String email, String telefono, LocalDate fechaNacimiento, String sexo, String estadoCivil, String ocupacion, String direccion, String tipoSangre, String contactoEmergenciaNombre, String contactoEmergenciaTelefono, String tipoSeguro, String nss, Boolean activo) {
         this.id = id;
         this.nombreCompleto = nombreCompleto;
@@ -37,8 +36,6 @@ public class PacienteResponseDTO {
         this.nss = nss;
         this.activo = activo;
     }
-
-    // GETTERS...
     public Long getId() { return id; }
     public String getNombreCompleto() { return nombreCompleto; }
     public String getEmail() { return email; }

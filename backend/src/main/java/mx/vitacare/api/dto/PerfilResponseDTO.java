@@ -10,8 +10,6 @@ public record PerfilResponseDTO(
         String departamento,
         String fotoUrl,
         String rol,
-
-        // Datos opcionales si es paciente
         Long pacienteId,
         LocalDate fechaNacimiento,
         String sexo,
@@ -23,8 +21,6 @@ public record PerfilResponseDTO(
         String contactoEmergenciaTelefono,
         String tipoSeguro,
         String nss,
-
-        // Datos opcionales si es médico
         Long medicoId,
         String cedulaProfesional,
         Integer anosExperiencia,

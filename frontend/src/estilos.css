@@ -1,4 +1,4 @@
-/* Acabado Soft Medical para módulos; no interviene en el diseño del login. */
+
 :root {
   --suave-marino: #203a50;
   --suave-turquesa: #15978f;
@@ -28,13 +28,10 @@
 .avatar-usuario { background: linear-gradient(145deg, #ddf3ef, #e5eefb); box-shadow: inset 0 0 0 1px rgb(32 113 126 / 7%); }
 .usuario-barra-superior { padding: 5px 8px 5px 5px; border: 1px solid #edf1f5; border-radius: 30px; background: #fff; }
 .contenido-app { background: radial-gradient(ellipse at 88% 0%, rgb(226 239 250 / 30%), transparent 33%), var(--suave-fondo); }
-.aviso-demostracion { border-color: #d6eee9; background: linear-gradient(90deg, #e9f7f4, #f4faf9); color: #397d78; }
-.aviso-demostracion strong { display: inline-flex; align-items: center; gap: 6px; }
-.aviso-demostracion strong::before { content: '✦'; color: #42a99e; font-size: 12px; }
 
 .encabezado-pagina h1,.bienvenida-copia h1 { color: var(--suave-marino); letter-spacing: -.035em; }
 .encabezado-pagina p { color: #8396a3; }
-.nota-datos-demo { border-left-color: #7bbdb6; border-radius: 0 7px 7px 0; background: linear-gradient(90deg, #eef8f7, #f7fbfa); color: #6a8989; }
+.nota-pagina { border-left-color: #7bbdb6; border-radius: 0 7px 7px 0; background: linear-gradient(90deg, #eef8f7, #f7fbfa); color: #6a8989; }
 .tarjeta-contenido,.tarjeta-panel,.tarjeta-medico,.tarjeta-perfil-paciente,.recordatorio-panel,.atajos-panel,.tarjeta-estados { border-color: var(--suave-borde); box-shadow: var(--sombra-tarjeta); }
 .tarjeta-contenido,.seccion-panel,.atajos-panel,.tarjeta-estados,.recordatorio-panel { border-radius: 12px; }
 .bienvenida-rol { min-height: 176px; border-radius: 15px; box-shadow: 0 12px 30px rgb(35 104 113 / 5%); }

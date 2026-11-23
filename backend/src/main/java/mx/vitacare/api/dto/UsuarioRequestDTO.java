@@ -3,6 +3,7 @@ package mx.vitacare.api.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 
 public class UsuarioRequestDTO {
 
@@ -15,6 +16,9 @@ public class UsuarioRequestDTO {
     @Size(max = 100, message = "El correo no puede exceder 100 caracteres")
     private String email;
 
+    @Pattern(
+            regexp = "^$|^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$",
+            message = "La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial")
     private String password;
 
     @Size(max = 20, message = "El teléfono no puede exceder 20 caracteres")

@@ -6,6 +6,7 @@ import mx.vitacare.api.dto.UsuarioRequestDTO;
 import mx.vitacare.api.dto.UsuarioResponseDTO;
 import mx.vitacare.api.exception.ConflictoException;
 import mx.vitacare.api.exception.RecursoNoEncontradoException;
+import mx.vitacare.api.exception.ReglaNegocioException;
 import mx.vitacare.api.model.Medico;
 import mx.vitacare.api.model.Paciente;
 import mx.vitacare.api.model.Rol;
@@ -17,6 +18,8 @@ import mx.vitacare.api.repository.UsuarioRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +63,9 @@ public class UsuarioService {
         if (usuarioRepository.existsByEmail(dto.getEmail())) {
             throw new ConflictoException("El correo ya se encuentra registrado: " + dto.getEmail());
         }
+        if (dto.getPassword() == null || dto.getPassword().isBlank()) {
+            throw new ReglaNegocioException("La contraseña es obligatoria al crear una cuenta");
+        }
 
         Rol rol = rolRepository.findByNombre(dto.getRol().toUpperCase())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado: " + dto.getRol()));
@@ -67,10 +73,7 @@ public class UsuarioService {
         Usuario usuario = new Usuario();
         usuario.setNombreCompleto(dto.getNombreCompleto());
         usuario.setEmail(dto.getEmail());
-        String contrasenaPlana = (dto.getPassword() != null && !dto.getPassword().isBlank())
-                ? dto.getPassword()
-                : "Vitacare123!";
-        usuario.setContrasena(passwordEncoder.encode(contrasenaPlana));
+        usuario.setContrasena(passwordEncoder.encode(dto.getPassword()));
         usuario.setTelefono(dto.getTelefono());
         usuario.setDepartamento(dto.getDepartamento());
         usuario.setRol(rol);
@@ -78,7 +81,7 @@ public class UsuarioService {
 
         Usuario guardado = usuarioRepository.save(usuario);
 
-        // Si se crea con rol DOCTOR o PATIENT, inicializamos su registro complementario
+       
         if ("DOCTOR".equalsIgnoreCase(rol.getNombre())) {
             Medico medico = new Medico();
             medico.setUsuario(guardado);
@@ -96,9 +99,24 @@ public class UsuarioService {
     }
 
     @Transactional
-    public UsuarioResponseDTO actualizar(Long id, UsuarioRequestDTO dto) {
+    public UsuarioResponseDTO actualizar(Long id, UsuarioRequestDTO dto, Authentication autenticacion) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado con ID: " + id));
+
+        Rol nuevoRol = null;
+        if (dto.getRol() != null && !dto.getRol().isBlank()
+                && !usuario.getRol().getNombre().equalsIgnoreCase(dto.getRol().trim())) {
+            boolean esAdmin = autenticacion != null && autenticacion.getAuthorities().stream()
+                    .anyMatch(autoridad -> "ROLE_ADMIN".equals(autoridad.getAuthority()));
+            if (!esAdmin) {
+                throw new AccessDeniedException("No tienes permiso para modificar roles");
+            }
+            if (usuario.getEmail().equalsIgnoreCase(autenticacion.getName())) {
+                throw new AccessDeniedException("No puedes modificar tu propio rol");
+            }
+            nuevoRol = rolRepository.findByNombre(dto.getRol().trim().toUpperCase())
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado: " + dto.getRol()));
+        }
 
         if (!usuario.getEmail().equalsIgnoreCase(dto.getEmail()) && usuarioRepository.existsByEmail(dto.getEmail())) {
             throw new ConflictoException("El correo ya está en uso por otro usuario: " + dto.getEmail());
@@ -113,10 +131,22 @@ public class UsuarioService {
             usuario.setContrasena(passwordEncoder.encode(dto.getPassword()));
         }
 
-        if (dto.getRol() != null && !dto.getRol().isBlank()) {
-            Rol nuevoRol = rolRepository.findByNombre(dto.getRol().toUpperCase())
-                    .orElseThrow(() -> new RecursoNoEncontradoException("Rol no encontrado: " + dto.getRol()));
+        if (nuevoRol != null) {
             usuario.setRol(nuevoRol);
+            if ("DOCTOR".equalsIgnoreCase(nuevoRol.getNombre())
+                    && medicoRepository.findByUsuarioId(usuario.getId()).isEmpty()) {
+                Medico medico = new Medico();
+                medico.setUsuario(usuario);
+                medico.setCedulaProfesional("PEND-" + usuario.getId());
+                medico.setActivo(true);
+                medicoRepository.save(medico);
+            } else if ("PATIENT".equalsIgnoreCase(nuevoRol.getNombre())
+                    && pacienteRepository.findByUsuarioId(usuario.getId()).isEmpty()) {
+                Paciente paciente = new Paciente();
+                paciente.setUsuario(usuario);
+                paciente.setActivo(true);
+                pacienteRepository.save(paciente);
+            }
         }
 
         if (dto.getActivo() != null) {

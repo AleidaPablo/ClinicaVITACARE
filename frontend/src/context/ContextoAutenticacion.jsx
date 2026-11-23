@@ -4,27 +4,27 @@ import { contextoAutenticacion } from './ContextoAutenticacionCompartido.js'
 export function ProveedorAutenticacion({ children }) {
   const [session, setSession] = useState(() => {
     try {
-      const token = localStorage.getItem('token')
-      const usuarioGuardado = localStorage.getItem('usuario')
+      const token = sessionStorage.getItem('token')
+      const usuarioGuardado = sessionStorage.getItem('usuario')
       if (token && usuarioGuardado) {
         return { accessToken: token, user: JSON.parse(usuarioGuardado) }
       }
     } catch {
-      localStorage.removeItem('token')
-      localStorage.removeItem('usuario')
+      sessionStorage.removeItem('token')
+      sessionStorage.removeItem('usuario')
     }
     return null
   })
 
   const establishSession = useCallback(({ user, accessToken }) => {
-    localStorage.setItem('token', accessToken)
-    localStorage.setItem('usuario', JSON.stringify(user))
+    sessionStorage.setItem('token', accessToken)
+    sessionStorage.setItem('usuario', JSON.stringify(user))
     setSession({ user, accessToken })
   }, [])
 
   const clearSession = useCallback(() => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('usuario')
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('usuario')
     setSession(null)
   }, [])
 

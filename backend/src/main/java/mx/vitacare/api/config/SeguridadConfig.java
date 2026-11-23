@@ -32,7 +32,7 @@ import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Activa @PreAuthorize en los controladores
+@EnableMethodSecurity 
 public class SeguridadConfig {
 
     private static final ObjectMapper MAPEADOR_JSON = new ObjectMapper();
@@ -40,7 +40,7 @@ public class SeguridadConfig {
     private final JwtAutenticacionFiltro jwtAutenticacionFiltro;
     private final UsuarioDetallesServicio usuarioDetallesServicio;
 
-    @Value("${cors.origenes-permitidos:http://localhost:5173}")
+    @Value("${cors.origenes-permitidos:http://localhost:5174}")
     private String origenesPermitidos;
 
     public SeguridadConfig(JwtAutenticacionFiltro jwtAutenticacionFiltro, UsuarioDetallesServicio usuarioDetallesServicio) {

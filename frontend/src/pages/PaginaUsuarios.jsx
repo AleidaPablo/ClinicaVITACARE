@@ -16,6 +16,10 @@ export default function PaginaUsuarios() {
   const [cargando, setCargando] = useState(true)
   const [errorServidor, setErrorServidor] = useState('')
 
+  const [paginaActual, setPaginaActual] = useState(0)
+  const [totalPaginas, setTotalPaginas] = useState(1)
+  const [totalElementos, setTotalElementos] = useState(0)
+
   const [busqueda, establecerBusqueda] = useState('')
   const [rolFiltro, establecerRolFiltro] = useState('Todos')
   const [modal, establecerModal] = useState(null)
@@ -28,9 +32,10 @@ export default function PaginaUsuarios() {
     try {
       const res = await axiosClient.get('/usuarios', {
         params: {
-          search: busqueda || undefined,
+          search: busqueda.trim() || undefined,
           rol: rolFiltro !== 'Todos' ? rolFiltro : undefined,
-          size: 50
+          page: paginaActual,
+          size: 10
         },
         signal
       })
@@ -48,6 +53,8 @@ export default function PaginaUsuarios() {
       }))
 
       setUsuarios(mapeados)
+      setTotalPaginas(res.data?.totalPages || 1)
+      setTotalElementos(res.data?.totalElements || 0)
     } catch (err) {
       if (signal?.aborted) return
       console.error('Error al cargar usuarios:', err)
@@ -55,7 +62,7 @@ export default function PaginaUsuarios() {
     } finally {
       if (!signal?.aborted) setCargando(false)
     }
-  }, [busqueda, rolFiltro])
+  }, [busqueda, rolFiltro, paginaActual])
 
   useEffect(() => {
     const controlador = new AbortController()
@@ -165,7 +172,7 @@ export default function PaginaUsuarios() {
       <section className="resumen-modulo-grid" aria-label="Resumen de cuentas">
         <article className="resumen-modulo-card">
           <span className="resumen-icono"><Icono name="users" size={17} /></span>
-          <span><small>Cuentas registradas</small><strong>{cargando ? '…' : usuarios.length}</strong></span>
+          <span><small>Cuentas registradas</small><strong>{cargando ? '…' : totalElementos}</strong></span>
         </article>
         <article className="resumen-modulo-card">
           <span className="resumen-icono"><Icono name="doctors" size={17} /></span>
@@ -184,12 +191,21 @@ export default function PaginaUsuarios() {
               aria-label="Buscar usuario"
               placeholder="Buscar por nombre o correo…"
               value={busqueda}
-              onChange={(e) => establecerBusqueda(e.target.value)}
+              onChange={(e) => {
+                establecerBusqueda(e.target.value)
+                setPaginaActual(0)
+              }}
             />
           </label>
           <label>
             Rol
-            <select value={rolFiltro} onChange={(e) => establecerRolFiltro(e.target.value)}>
+            <select
+              value={rolFiltro}
+              onChange={(e) => {
+                establecerRolFiltro(e.target.value)
+                setPaginaActual(0)
+              }}
+            >
               <option>Todos</option>
               <option value="ADMIN">Administrador</option>
               <option value="DOCTOR">Médico</option>
@@ -259,6 +275,27 @@ export default function PaginaUsuarios() {
             {!usuarios.length && <div className="estado-vacio">No encontramos cuentas con esos filtros.</div>}
           </div>
         )}
+
+        {/* CONTROLES DE PAGINACIÓN */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '0 10px' }}>
+          <button
+            className="boton-secundario"
+            disabled={paginaActual === 0 || cargando}
+            onClick={() => setPaginaActual(paginaActual - 1)}
+          >
+            ← Anterior
+          </button>
+          <span style={{ fontSize: '14px', color: '#666' }}>
+            Página {paginaActual + 1} de {totalPaginas}
+          </span>
+          <button
+            className="boton-secundario"
+            disabled={paginaActual >= totalPaginas - 1 || cargando}
+            onClick={() => setPaginaActual(paginaActual + 1)}
+          >
+            Siguiente →
+          </button>
+        </div>
       </section>
 
       {modal && (

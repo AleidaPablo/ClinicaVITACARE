@@ -88,7 +88,7 @@ export default function PaginaExpedientes() {
         const [resPacientes, resMedicos, resExpedientes] = await Promise.all([
           axiosClient.get('/pacientes', { params: { size: 100 }, signal }),
           axiosClient.get('/medicos', { params: { size: 100 }, signal }).catch(() => ({ data: { content: [] } })),
-          axiosClient.get('/expedientes', { signal }).catch(() => ({ data: [] }))
+          axiosClient.get('/expedientes', { params: { size: 100 }, signal }).catch(() => ({ data: { content: [] } }))
         ])
         if (signal?.aborted) return
         const pacientesMap = (resPacientes.data?.content || []).map((p) => {
@@ -125,7 +125,9 @@ export default function PaginaExpedientes() {
         }))
         setPacientes(pacientesMap)
         setMedicos(medicosMap)
-        setExpedientesResumen(resExpedientes.data || [])
+        const expData = resExpedientes.data
+        const listaExpedientes = Array.isArray(expData) ? expData : (expData?.content || [])
+        setExpedientesResumen(listaExpedientes)
       }
     } catch (err) {
       if (signal?.aborted) return
@@ -287,7 +289,8 @@ export default function PaginaExpedientes() {
     : []
 
   const obtenerResumenPaciente = (pacienteId) => {
-    const exp = expedientesResumen.find((e) => String(e.patientId) === String(pacienteId))
+    const lista = Array.isArray(expedientesResumen) ? expedientesResumen : (expedientesResumen?.content || [])
+    const exp = lista.find((e) => String(e.patientId) === String(pacienteId))
     return {
       conteoConsultas: exp?.entradas?.length ?? 0,
       ultimaVisita: exp?.ultimaVisita || null

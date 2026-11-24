@@ -24,63 +24,81 @@ const medicoVacio = {
 }
 
 export default function PaginaMedicos() {
-  
   const [medicos, establecerMedicos] = useState([])
   const [cargando, establecerCargando] = useState(true)
 
- 
+  const [paginaActual, setPaginaActual] = useState(0)
+  const [totalPaginas, setTotalPaginas] = useState(1)
+  const [totalElementos, setTotalElementos] = useState(0)
+
   const [busqueda, establecerBusqueda] = useState('')
-  const [especialidad, establecerEspecialidad] = useState('Todas')
+  const [estadoFiltro, setEstadoFiltro] = useState('Todos')
   const [modal, establecerModal] = useState(null)
   const [formulario, establecerFormulario] = useState(medicoVacio)
   const [errores, establecerErrores] = useState({})
   const [errorServidor, establecerErrorServidor] = useState('')
 
-  
-  const cargarMedicos = useCallback(async () => {
+  const cargarMedicos = useCallback(async (signal) => {
+    establecerCargando(true)
+    establecerErrorServidor('')
     try {
-        const res = await axiosClient.get('/medicos')
-        
-       
-        const medicosMapeados = res.data.content.map(m => ({
-          id: m.id,
-          name: m.nombreCompleto,
-          email: m.email,
-          phone: m.telefono || '',
-          license: m.cedulaProfesional || '',
-          experience: m.anosExperiencia || 0,
-          languages: m.idiomas || 'Español',
-          consultationRoom: m.consultorio || 'Por asignar',
-          availability: m.disponibilidad || 'Sin definir',
-          specialty: 'Medicina General', 
-          status: m.activo ? 'Activo' : 'Inactivo'
-        }))
-        
+      const params = {
+        page: paginaActual,
+        size: 6
+      }
+
+      if (estadoFiltro !== 'Todos') {
+        params.activo = estadoFiltro === 'Activo'
+      }
+
+      const q = busqueda.trim()
+      if (q) {
+        if (q.includes('@')) {
+          params.email = q
+        } else if (/^\d+$/.test(q)) {
+          params.cedula = q
+        } else {
+          params.nombre = q
+        }
+      }
+
+      const res = await axiosClient.get('/medicos', { params, signal })
+      if (signal?.aborted) return
+
+      const medicosMapeados = (res.data?.content || []).map((m) => ({
+        id: m.id,
+        name: m.nombreCompleto,
+        email: m.email,
+        phone: m.telefono || '',
+        license: m.cedulaProfesional || '',
+        experience: m.anosExperiencia || 0,
+        languages: m.idiomas || 'Español',
+        consultationRoom: m.consultorio || 'Por asignar',
+        availability: m.disponibilidad || 'Sin definir',
+        specialty: 'Medicina General',
+        status: m.activo ? 'Activo' : 'Inactivo'
+      }))
+
       establecerMedicos(medicosMapeados)
+      setTotalPaginas(res.data?.totalPages || 1)
+      setTotalElementos(res.data?.totalElements || 0)
     } catch (error) {
+      if (signal?.aborted) return
       establecerErrorServidor(error.response?.data?.mensaje || 'No se pudo cargar el directorio médico.')
     } finally {
-      establecerCargando(false)
+      if (!signal?.aborted) establecerCargando(false)
     }
-  }, [])
+  }, [paginaActual, busqueda, estadoFiltro])
 
   useEffect(() => {
-    Promise.resolve().then(() => cargarMedicos())
+    const controlador = new AbortController()
+    Promise.resolve().then(() => {
+      if (!controlador.signal.aborted) cargarMedicos(controlador.signal)
+    })
+    return () => controlador.abort()
   }, [cargarMedicos])
 
-  
-  const especialidades = [...new Set(medicos.map((medico) => medico.specialty))]
-
-  
-  const visibles = useMemo(
-    () => medicos.filter((medico) =>
-      `${medico.name} ${medico.specialty} ${medico.email}`
-        .toLowerCase()
-        .includes(busqueda.toLowerCase()) &&
-      (especialidad === 'Todas' || medico.specialty === especialidad)
-    ),
-    [medicos, busqueda, especialidad]
-  )
+  const visibles = medicos
 
   function abrir(medico) {
     establecerFormulario(medico ? { ...medico } : medicoVacio)
@@ -183,10 +201,6 @@ export default function PaginaMedicos() {
     }
   }
 
-  if (cargando) {
-    return <div className="pila-pagina" style={{ padding: '2rem', textAlign: 'center' }}>Cargando directorio médico...</div>
-  }
-
   return (
     <div className="pila-pagina">
       <div className="encabezado-pagina">
@@ -204,21 +218,21 @@ export default function PaginaMedicos() {
           <span className="resumen-icono"><Icono name="doctors" size={17} /></span>
           <span>
             <small>Profesionales registrados</small>
-            <strong>{medicos.length}</strong>
+            <strong>{cargando ? '…' : totalElementos}</strong>
           </span>
         </article>
         <article className="resumen-modulo-card">
           <span className="resumen-icono"><Icono name="check" size={17} /></span>
           <span>
-            <small>Disponibles</small>
-            <strong>{medicos.filter((medico) => medico.status === 'Activo').length}</strong>
+            <small>Disponibles en página</small>
+            <strong>{cargando ? '…' : medicos.filter((medico) => medico.status === 'Activo').length}</strong>
           </span>
         </article>
         <article className="resumen-modulo-card">
           <span className="resumen-icono"><Icono name="records" size={17} /></span>
           <span>
-            <small>Especialidades</small>
-            <strong>{especialidades.length}</strong>
+            <small>Páginas totales</small>
+            <strong>{cargando ? '…' : totalPaginas}</strong>
           </span>
         </article>
       </section>
@@ -227,73 +241,109 @@ export default function PaginaMedicos() {
         <label className="busqueda-pacientes">
           <input
             aria-label="Buscar médico"
-            placeholder="Buscar médico o especialidad…"
+            placeholder="Buscar médico por nombre, correo o cédula…"
             value={busqueda}
-            onChange={(e) => establecerBusqueda(e.target.value)}
+            onChange={(e) => {
+              establecerBusqueda(e.target.value)
+              setPaginaActual(0)
+            }}
           />
         </label>
         <label>
-          Especialidad
-          <select value={especialidad} onChange={(e) => establecerEspecialidad(e.target.value)}>
-            <option>Todas</option>
-            {especialidades.map((item) => <option key={item}>{item}</option>)}
+          Estado
+          <select
+            value={estadoFiltro}
+            onChange={(e) => {
+              setEstadoFiltro(e.target.value)
+              setPaginaActual(0)
+            }}
+          >
+            <option value="Todos">Todos los estados</option>
+            <option value="Activo">Activos</option>
+            <option value="Inactivo">Inactivos</option>
           </select>
         </label>
       </div>
 
       <section className="rejilla-medicos">
-        {visibles.map((medico) => (
-          <article className="tarjeta-medico" key={medico.id}>
-            <div className="encabezado-medico">
-              <span className="avatar-medico">
-                {medico.name.split(' ').slice(1, 3).map((parte) => parte[0]).join('')}
-              </span>
-              <button className="boton-texto" type="button" onClick={() => abrir(medico)}>
-                Editar
-              </button>
-            </div>
+        {cargando ? (
+          <div className="estado-vacio" style={{ gridColumn: '1 / -1' }}>Cargando directorio médico…</div>
+        ) : (
+          <>
+            {visibles.map((medico) => (
+              <article className="tarjeta-medico" key={medico.id}>
+                <div className="encabezado-medico">
+                  <span className="avatar-medico">
+                    {medico.name.split(' ').slice(1, 3).map((parte) => parte[0]).join('')}
+                  </span>
+                  <button className="boton-texto" type="button" onClick={() => abrir(medico)}>
+                    Editar
+                  </button>
+                </div>
 
-            <span className="etiqueta-especialidad">{medico.specialty}</span>
-            <h2>{medico.name}</h2>
-            <p className="texto-secundario">Cédula profesional: {medico.license}</p>
-            <p className="texto-secundario">{medico.experience || 0} años de experiencia</p>
+                <span className="etiqueta-especialidad">{medico.specialty}</span>
+                <h2>{medico.name}</h2>
+                <p className="texto-secundario">Cédula profesional: {medico.license}</p>
+                <p className="texto-secundario">{medico.experience || 0} años de experiencia</p>
 
-            <div className="datos-medico">
-              <span>✉ {medico.email}</span>
-              <span>☎ {medico.phone}</span>
-              <span>◷ {medico.availability}</span>
-              <span>Consultorio: {medico.consultationRoom || 'Por asignar'}</span>
-              <span>Idiomas: {medico.languages || 'Español'}</span>
-            </div>
+                <div className="datos-medico">
+                  <span>✉ {medico.email}</span>
+                  <span>☎ {medico.phone}</span>
+                  <span>◷ {medico.availability}</span>
+                  <span>Consultorio: {medico.consultationRoom || 'Por asignar'}</span>
+                  <span>Idiomas: {medico.languages || 'Español'}</span>
+                </div>
 
-            <div className="pie-medico">
-              <span className={`etiqueta-estado ${medico.status === 'Inactivo' ? 'estado-cancelada' : ''}`}>
-                {medico.status}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  
-                  establecerMedicos((lista) =>
-                    lista.map((m) =>
-                      m.id === medico.id
-                        ? { ...m, status: m.status === 'Activo' ? 'Inactivo' : 'Activo' }
-                        : m
-                    )
-                  )
-                }}
-              >
-                {medico.status === 'Activo' ? 'Desactivar' : 'Activar'}
-              </button>
-            </div>
-          </article>
-        ))}
+                <div className="pie-medico">
+                  <span className={`etiqueta-estado ${medico.status === 'Inactivo' ? 'estado-cancelada' : ''}`}>
+                    {medico.status}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      establecerMedicos((lista) =>
+                        lista.map((m) =>
+                          m.id === medico.id
+                            ? { ...m, status: m.status === 'Activo' ? 'Inactivo' : 'Activo' }
+                            : m
+                        )
+                      )
+                    }}
+                  >
+                    {medico.status === 'Activo' ? 'Desactivar' : 'Activar'}
+                  </button>
+                </div>
+              </article>
+            ))}
 
-        {!visibles.length && (
-          <div className="estado-vacio">
-            No hay médicos que coincidan con esta búsqueda.
-          </div>
+            {!visibles.length && (
+              <div className="estado-vacio" style={{ gridColumn: '1 / -1' }}>
+                No hay médicos que coincidan con esta búsqueda.
+              </div>
+            )}
+          </>
         )}
+
+        {/* CONTROLES DE PAGINACIÓN */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '0 10px', gridColumn: '1 / -1' }}>
+          <button
+            className="boton-secundario"
+            disabled={paginaActual === 0 || cargando}
+            onClick={() => setPaginaActual(paginaActual - 1)}
+          >
+            ← Anterior
+          </button>
+          <span style={{ fontSize: '14px', color: '#666' }}>
+            Página {paginaActual + 1} de {totalPaginas}
+          </span>
+          <button
+            className="boton-secundario"
+            disabled={paginaActual >= totalPaginas - 1 || cargando}
+            onClick={() => setPaginaActual(paginaActual + 1)}
+          >
+            Siguiente →
+          </button>
+        </div>
       </section>
 
       {modal && (

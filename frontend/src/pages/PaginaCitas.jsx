@@ -20,26 +20,90 @@ export default function PaginaCitas() {
   const [cargando, setCargando] = useState(true)
   const [errorServidor, setErrorServidor] = useState('')
 
+  const [paginaActual, setPaginaActual] = useState(0)
+  const [totalPaginas, setTotalPaginas] = useState(1)
+  const [totalElementos, setTotalElementos] = useState(0)
+
   const [vista, establecerVista] = useState('lista')
   const [fechaFiltro, establecerFechaFiltro] = useState('')
   const [estadoFiltro, establecerEstadoFiltro] = useState('Todos')
+  const [medicoFiltro, establecerMedicoFiltro] = useState('Todos')
+  const [pacienteFiltro, establecerPacienteFiltro] = useState('Todos')
   const [modal, establecerModal] = useState(null)
   const [formulario, establecerFormulario] = useState(citaVacia)
   const [errores, establecerErrores] = useState({})
 
   const esPaciente = user?.role === 'PATIENT'
 
+  // Carga catálogos de apoyo (médicos y pacientes)
+  useEffect(() => {
+    let cancel = false
+    const cargarCatalogos = async () => {
+      try {
+        const resMedicos = await axiosClient.get('/medicos/directorio')
+        if (cancel) return
+        setMedicos((resMedicos.data || []).map((medico) => ({
+          id: medico.id,
+          name: medico.nombre,
+          specialty: medico.especialidad || '',
+          availability: medico.disponibilidad || '',
+          status: 'Activo'
+        })))
 
-  const cargarDatos = useCallback(async (signal) => {
+        if (esPaciente) {
+          setPacientes([{
+            id: user?.patientId,
+            name: user?.name || 'Paciente',
+            email: user?.email || ''
+          }])
+        } else {
+          const resPacientes = await axiosClient.get('/pacientes', { params: { size: 100 } })
+          if (cancel) return
+          setPacientes((resPacientes.data?.content || []).map((p) => ({
+            id: p.id,
+            name: p.nombreCompleto,
+            email: p.email,
+            phone: p.telefono
+          })))
+        }
+      } catch (err) {
+        console.error('Error al cargar catálogos:', err)
+      }
+    }
+    cargarCatalogos()
+    return () => { cancel = true }
+  }, [esPaciente, user])
+
+  const cargarCitas = useCallback(async (signal) => {
     setCargando(true)
     setErrorServidor('')
     try {
-      const [resCitas, resMedicos] = await Promise.all([
-        axiosClient.get('/citas', { params: { size: 100 }, signal }),
-        axiosClient.get('/medicos/directorio', { signal })
-      ])
+      const params = {
+        page: paginaActual,
+        size: vista === 'calendario' ? 100 : 10
+      }
 
+      if (estadoFiltro !== 'Todos') {
+        params.estado = estadoFiltro
+      }
+      if (fechaFiltro) {
+        params.fecha = fechaFiltro
+      }
+      if (esPaciente && user?.patientId) {
+        params.pacienteId = user.patientId
+      } else if (pacienteFiltro !== 'Todos' && pacienteFiltro) {
+        params.pacienteId = pacienteFiltro
+      }
+
+      if (user?.role === 'DOCTOR' && user?.doctorId) {
+        params.medicoId = user.doctorId
+      } else if (medicoFiltro !== 'Todos' && medicoFiltro) {
+        params.medicoId = medicoFiltro
+      }
+
+      const resCitas = await axiosClient.get('/citas', { params, signal })
       if (signal?.aborted) return
+
       const citasMapeadas = (resCitas.data?.content || []).map((c) => {
         const fechaHora = c.fechaHora ? String(c.fechaHora) : ''
         const estadoMayus = (c.estado || 'PENDIENTE').toUpperCase()
@@ -62,29 +126,8 @@ export default function PaginaCitas() {
       })
 
       setCitas(citasMapeadas)
-      setMedicos((resMedicos.data || []).map((medico) => ({
-        id: medico.id,
-        name: medico.nombre,
-        specialty: medico.especialidad || '',
-        availability: medico.disponibilidad || '',
-        status: 'Activo'
-      })))
-      if (esPaciente) {
-        setPacientes([{
-          id: user?.patientId,
-          name: user?.name || 'Paciente',
-          email: user?.email || ''
-        }])
-      } else {
-        const resPacientes = await axiosClient.get('/pacientes', { params: { size: 100 }, signal })
-        if (signal?.aborted) return
-        setPacientes((resPacientes.data?.content || []).map((p) => ({
-          id: p.id,
-          name: p.nombreCompleto,
-          email: p.email,
-          phone: p.telefono
-        })))
-      }
+      setTotalPaginas(resCitas.data?.totalPages || 1)
+      setTotalElementos(resCitas.data?.totalElements || 0)
     } catch (err) {
       if (signal?.aborted) return
       console.error('Error al cargar citas de la API:', err)
@@ -92,23 +135,17 @@ export default function PaginaCitas() {
     } finally {
       if (!signal?.aborted) setCargando(false)
     }
-  }, [esPaciente, user])
+  }, [paginaActual, vista, estadoFiltro, fechaFiltro, esPaciente, user, pacienteFiltro, medicoFiltro])
 
   useEffect(() => {
     const controlador = new AbortController()
     Promise.resolve().then(() => {
-      if (!controlador.signal.aborted) cargarDatos(controlador.signal)
+      if (!controlador.signal.aborted) cargarCitas(controlador.signal)
     })
     return () => controlador.abort()
-  }, [cargarDatos])
+  }, [cargarCitas])
 
-  const citasVisibles = citas.filter((cita) => {
-    const coincidePaciente = !esPaciente || String(cita.patientId) === String(user?.patientId ?? '')
-    const coincideMedico = user?.role !== 'DOCTOR' || String(cita.doctorId) === String(user?.doctorId ?? '')
-    const coincideFecha = !fechaFiltro || cita.date === fechaFiltro
-    const coincideEstado = estadoFiltro === 'Todos' || cita.status === estadoFiltro
-    return coincidePaciente && coincideMedico && coincideFecha && coincideEstado
-  })
+  const citasVisibles = citas
 
   function abrirFormulario(cita) {
     const pacientePorDefecto = esPaciente ? (user?.patientId ?? '') : (formulario.patientId || pacientes[0]?.id || '')
@@ -170,7 +207,7 @@ export default function PaginaCitas() {
       } else {
         await axiosClient.post('/citas', payload)
       }
-      await cargarDatos()
+      await cargarCitas()
       establecerModal(null)
     } catch (err) {
       console.error('Error al guardar la cita:', err)
@@ -183,7 +220,7 @@ export default function PaginaCitas() {
       await axiosClient.patch(`/citas/${cita.id}/estado`, {
         estado: nuevoEstado.toUpperCase()
       })
-      await cargarDatos()
+      await cargarCitas()
     } catch (err) {
       console.error('Error al actualizar estado:', err)
       setErrorServidor(err.response?.data?.mensaje || 'Error al actualizar el estado de la cita.')
@@ -227,7 +264,7 @@ export default function PaginaCitas() {
       <section className="resumen-modulo-grid" aria-label="Resumen de citas">
         <article className="resumen-modulo-card">
           <span className="resumen-icono"><Icono name="calendar" size={17} /></span>
-          <span><small>Citas</small><strong>{cargando ? '…' : citasVisibles.length}</strong></span>
+          <span><small>Citas</small><strong>{cargando ? '…' : totalElementos}</strong></span>
         </article>
         <article className="resumen-modulo-card">
           <span className="resumen-icono"><Icono name="clock" size={17} /></span>
@@ -252,11 +289,38 @@ export default function PaginaCitas() {
           <div className="filtros-modulo">
             <label>
               Fecha
-              <input aria-label="Filtrar por fecha" type="date" value={fechaFiltro} onChange={(e) => establecerFechaFiltro(e.target.value)} />
+              <input
+                aria-label="Filtrar por fecha"
+                type="date"
+                value={fechaFiltro}
+                onChange={(e) => {
+                  establecerFechaFiltro(e.target.value)
+                  setPaginaActual(0)
+                }}
+              />
             </label>
+            {fechaFiltro && (
+              <button
+                type="button"
+                className="boton-secundario"
+                style={{ padding: '6px 10px', fontSize: '12px' }}
+                onClick={() => {
+                  establecerFechaFiltro('')
+                  setPaginaActual(0)
+                }}
+              >
+                Limpiar fecha
+              </button>
+            )}
             <label>
               Estado
-              <select value={estadoFiltro} onChange={(e) => establecerEstadoFiltro(e.target.value)}>
+              <select
+                value={estadoFiltro}
+                onChange={(e) => {
+                  establecerEstadoFiltro(e.target.value)
+                  setPaginaActual(0)
+                }}
+              >
                 <option>Todos</option>
                 <option>Confirmada</option>
                 <option>Pendiente</option>
@@ -264,65 +328,122 @@ export default function PaginaCitas() {
                 <option>Cancelada</option>
               </select>
             </label>
+            {user?.role !== 'DOCTOR' && (
+              <label>
+                Médico
+                <select
+                  value={medicoFiltro}
+                  onChange={(e) => {
+                    establecerMedicoFiltro(e.target.value)
+                    setPaginaActual(0)
+                  }}
+                >
+                  <option value="Todos">Todos</option>
+                  {medicos.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {user?.role === 'ADMIN' && (
+              <label>
+                Paciente
+                <select
+                  value={pacienteFiltro}
+                  onChange={(e) => {
+                    setPacienteFiltro(e.target.value)
+                    setPaginaActual(0)
+                  }}
+                >
+                  <option value="Todos">Todos</option>
+                  {pacientes.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
         </div>
 
         {cargando ? (
           <div className="estado-vacio">Cargando citas…</div>
         ) : vista === 'lista' ? (
-          <div className="desplazamiento-tabla">
-            <table className="tabla-datos">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Hora</th>
-                  <th>Paciente</th>
-                  <th>Médico</th>
-                  <th>Tipo de consulta</th>
-                  <th>Modalidad</th>
-                  <th>Motivo</th>
-                  <th>Consultorio</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {citasVisibles.map((cita) => (
-                  <tr key={cita.id}>
-                    <td>{fechaLegible(cita.date)}</td>
-                    <td className="hora-tabla">{cita.time}</td>
-                    <td>{obtenerNombrePaciente(cita.patientId, cita.patientName)}</td>
-                    <td>{obtenerNombreMedico(cita.doctorId, cita.doctorName)}</td>
-                    <td>{cita.type || 'Consulta general'}</td>
-                    <td>{cita.modality || 'Presencial'}</td>
-                    <td>{cita.reason}</td>
-                    <td>{cita.location || 'Por asignar'}</td>
-                    <td>
-                      <EtiquetaEstado estado={cita.status} className={claseEstadoCita(cita.status)} />
-                    </td>
-                    <td>
-                      <div className="acciones-tabla">
-                        <button type="button" onClick={() => { establecerFormulario(cita); establecerModal('detalle') }}>
-                          <Icono name="eye" size={14} /> Ver
-                        </button>
-                        {!esPaciente && (
-                          <button type="button" onClick={() => abrirFormulario(cita)}>
-                            <Icono name="edit" size={14} /> Editar
-                          </button>
-                        )}
-                      </div>
-                    </td>
+          <>
+            <div className="desplazamiento-tabla">
+              <table className="tabla-datos">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Paciente</th>
+                    <th>Médico</th>
+                    <th>Tipo de consulta</th>
+                    <th>Modalidad</th>
+                    <th>Motivo</th>
+                    <th>Consultorio</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {!citasVisibles.length && (
-              <div className="estado-vacio">
-                <strong>No hay citas para estos filtros</strong>
-                <span>Cambia la fecha o el estado.</span>
-              </div>
-            )}
-          </div>
+                </thead>
+                <tbody>
+                  {citasVisibles.map((cita) => (
+                    <tr key={cita.id}>
+                      <td>{fechaLegible(cita.date)}</td>
+                      <td className="hora-tabla">{cita.time}</td>
+                      <td>{obtenerNombrePaciente(cita.patientId, cita.patientName)}</td>
+                      <td>{obtenerNombreMedico(cita.doctorId, cita.doctorName)}</td>
+                      <td>{cita.type || 'Consulta general'}</td>
+                      <td>{cita.modality || 'Presencial'}</td>
+                      <td>{cita.reason}</td>
+                      <td>{cita.location || 'Por asignar'}</td>
+                      <td>
+                        <EtiquetaEstado estado={cita.status} className={claseEstadoCita(cita.status)} />
+                      </td>
+                      <td>
+                        <div className="acciones-tabla">
+                          <button type="button" onClick={() => { establecerFormulario(cita); establecerModal('detalle') }}>
+                            <Icono name="eye" size={14} /> Ver
+                          </button>
+                          {!esPaciente && (
+                            <button type="button" onClick={() => abrirFormulario(cita)}>
+                              <Icono name="edit" size={14} /> Editar
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!citasVisibles.length && (
+                <div className="estado-vacio">
+                  <strong>No hay citas para estos filtros</strong>
+                  <span>Cambia la fecha o el estado.</span>
+                </div>
+              )}
+            </div>
+
+            {/* CONTROLES DE PAGINACIÓN */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '0 10px' }}>
+              <button
+                className="boton-secundario"
+                disabled={paginaActual === 0 || cargando}
+                onClick={() => setPaginaActual(paginaActual - 1)}
+              >
+                ← Anterior
+              </button>
+              <span style={{ fontSize: '14px', color: '#666' }}>
+                Página {paginaActual + 1} de {totalPaginas}
+              </span>
+              <button
+                className="boton-secundario"
+                disabled={paginaActual >= totalPaginas - 1 || cargando}
+                onClick={() => setPaginaActual(paginaActual + 1)}
+              >
+                Siguiente →
+              </button>
+            </div>
+          </>
         ) : (
           <div className="calendario-mes">
             <div className="calendario-encabezado">

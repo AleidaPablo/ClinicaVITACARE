@@ -1,0 +1,22 @@
+info:
+  name: recuperacion de contra
+  type: http
+  seq: 34
+
+http:
+  method: POST
+  url: http://localhost:8080/api/autenticacion/recuperar-contrasena
+  body:
+    type: json
+    data: |-
+      {
+        "email": "velascoangela984@gmail.com"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

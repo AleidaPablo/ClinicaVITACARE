@@ -26,16 +26,18 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<UsuarioResponseDTO>> listar(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String rol,
-            @PageableDefault(size = 50) Pageable pageable) {
-        return ResponseEntity.ok(usuarioService.listar(search, rol, pageable));
-    }
+        @GetMapping
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<Page<UsuarioResponseDTO>> listar(
+                @RequestParam(required = false) String search,
+                @RequestParam(required = false) String rol,
+                @PageableDefault(size = 10, page = 0) Pageable pageable) {
 
-    @GetMapping("/{id}")
+            return ResponseEntity.ok(
+                    usuarioService.listar(search, rol, pageable)
+            );
+        }
+            @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponseDTO> obtenerPorId(@PathVariable Long id) {
         return ResponseEntity.ok(usuarioService.obtenerPorId(id));

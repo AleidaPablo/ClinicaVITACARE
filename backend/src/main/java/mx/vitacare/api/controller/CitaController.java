@@ -25,21 +25,27 @@ public class CitaController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
-    public ResponseEntity<Page<CitaResponseDTO>> listar(
-            @RequestParam(required = false) Long pacienteId,
-            @RequestParam(required = false) Long medicoId,
-            @RequestParam(required = false) String estado,
-            @PageableDefault(size = 50) Pageable pageable,
-            Authentication autenticacion) {
-        return ResponseEntity.ok(citaService.listarPaginadas(
-                pacienteId,
-                medicoId,
-                estado,
-                pageable,
-                autenticacion.getName(),
-                obtenerRol(autenticacion)));
-    }
+@PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
+public ResponseEntity<Page<CitaResponseDTO>> listar(
+        @RequestParam(required = false) Long pacienteId,
+        @RequestParam(required = false) Long medicoId,
+        @RequestParam(required = false) String estado,
+        @RequestParam(required = false) String fecha,
+        @PageableDefault(size = 10, page = 0) Pageable pageable,
+        Authentication autenticacion) {
+
+    return ResponseEntity.ok(
+            citaService.listarPaginadas(
+                    pacienteId,
+                    medicoId,
+                    estado,
+                    fecha,
+                    pageable,
+                    autenticacion.getName(),
+                    obtenerRol(autenticacion)
+            )
+    );
+}
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'PATIENT', 'DOCTOR')")

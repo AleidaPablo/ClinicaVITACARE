@@ -17,6 +17,10 @@ import mx.vitacare.api.repository.CitaRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import mx.vitacare.api.specification.ExpedienteSpecs;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -175,6 +179,55 @@ public class ExpedienteService {
         }
         throw new AccessDeniedException("El rol no tiene acceso a los expedientes.");
     }
+
+
+
+@Transactional(readOnly = true)
+public Page<ExpedienteResponseDTO> listarPaginados(
+        String nombre,
+        String correo,
+        Pageable pageable,
+        String correoUsuario,
+        String rol) {
+
+    Specification<Expediente> spec = ExpedienteSpecs.todas();
+
+    if (nombre != null && !nombre.isBlank()) {
+        spec = spec.and(ExpedienteSpecs.porNombrePaciente(nombre.trim()));
+    }
+
+    if (correo != null && !correo.isBlank()) {
+        spec = spec.and(ExpedienteSpecs.porCorreoPaciente(correo.trim()));
+    }
+
+    if ("ADMIN".equals(rol)) {
+        return expedienteRepository.findAll(spec, pageable)
+                .map(this::convertirADto);
+    }
+
+    if ("DOCTOR".equals(rol)) {
+        Long medicoId = medicoRepository.findByUsuarioEmail(correoUsuario)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No se encontró el perfil médico asociado."))
+                .getId();
+
+        List<Long> pacienteIds = citaRepository.findByMedicoId(medicoId).stream()
+                .map(cita -> cita.getPaciente().getId())
+                .distinct()
+                .toList();
+
+        spec = spec.and((root, query, cb) ->
+                root.get("paciente").get("id").in(pacienteIds));
+
+        return expedienteRepository.findAll(spec, pageable)
+                .map(this::convertirADto);
+    }
+
+    throw new AccessDeniedException(
+            "El rol no tiene acceso a los expedientes.");
+}
+
+
 
     private void validarAccesoPaciente(Long pacienteId, String correoUsuario, String rol) {
         if ("ADMIN".equals(rol)) {

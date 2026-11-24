@@ -26,10 +26,18 @@ public class MedicoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
-    public ResponseEntity<Page<MedicoResponseDTO>> listar(@PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(medicoService.listar(pageable));
-    }
+@PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+public ResponseEntity<Page<MedicoResponseDTO>> listar(
+        @RequestParam(required = false) String nombre,
+        @RequestParam(required = false) String email,
+        @RequestParam(required = false) String cedula,
+        @RequestParam(required = false) Boolean activo,
+        @PageableDefault(size = 10) Pageable pageable) {
+
+    return ResponseEntity.ok(
+            medicoService.listar(nombre, email, cedula, activo, pageable)
+    );
+}
 
     @GetMapping("/directorio")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")

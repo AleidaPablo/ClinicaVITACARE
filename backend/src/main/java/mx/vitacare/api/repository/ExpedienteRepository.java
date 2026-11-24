@@ -1,14 +1,17 @@
+
 package mx.vitacare.api.repository;
 
 import mx.vitacare.api.model.Expediente;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.List;
 
 @Repository
-public interface ExpedienteRepository extends JpaRepository<Expediente, Long> {
+public interface ExpedienteRepository extends JpaRepository<Expediente, Long>,
+        JpaSpecificationExecutor<Expediente> {
 
     Optional<Expediente> findByPacienteId(Long pacienteId);
 

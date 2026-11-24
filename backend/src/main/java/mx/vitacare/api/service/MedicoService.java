@@ -33,9 +33,21 @@ public class MedicoService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public Page<MedicoResponseDTO> listar(Pageable pageable) {
-        return medicoRepository.findAll(pageable).map(this::convertirADto);
-    }
+    public Page<MedicoResponseDTO> listar(
+        String nombre,
+        String email,
+        String cedula,
+        Boolean activo,
+        Pageable pageable) {
+
+    return medicoRepository.buscarConFiltros(
+            nombre,
+            email,
+            cedula,
+            activo,
+            pageable
+    ).map(this::convertirADto);
+}
 
     public List<DirectorioMedicoDTO> listarDirectorioActivo() {
         return medicoRepository.listarDirectorioActivo().stream()

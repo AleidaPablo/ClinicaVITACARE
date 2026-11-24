@@ -12,10 +12,12 @@ http:
       {
         "nombreCompleto": "Usuario Prueba",
         "email": "velascoangela984@gmail.com",
-        "password": "",
+        "password": "Pido/03/11/07",
         "telefono": "9515301149"
       }
-  auth: inherit
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiJ9.eyJub21icmUiOiJBZG1pbmlzdHJhZG9yIFZJVEFDQVJFIiwidXN1YXJpb0lkIjoxOCwicm9sIjoiQURNSU4iLCJqdGkiOiJjYzQ1ZjZkNS1mMDJlLTQxYzEtYTg1Zi05ZTViZDU1ZWQzMzgiLCJzdWIiOiJhZG1pbkB2aXRhY2FyZS5jb20iLCJpYXQiOjE3OTU1MDE2MTcsImV4cCI6MTc5NTUwNTIxN30.F2s9J5GHUWKOp_c69motgP8khRuDaXBAgF5-TAci0uY
 
 settings:
   encodeUrl: true

@@ -10,7 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import java.util.List;
 
 @RestController
@@ -23,13 +25,23 @@ public class ExpedienteController {
         this.expedienteService = expedienteService;
     }
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
-    public ResponseEntity<List<ExpedienteResponseDTO>> listarTodos(Authentication autenticacion) {
-        return ResponseEntity.ok(expedienteService.listarTodos(
-                autenticacion.getName(),
-                obtenerRol(autenticacion)));
-    }
+   
+@GetMapping
+@PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+public ResponseEntity<Page<ExpedienteResponseDTO>> listarTodos(
+        @RequestParam(required = false) String nombre,
+        @RequestParam(required = false) String correo,
+        @PageableDefault(size = 10) Pageable pageable,
+        Authentication autenticacion) {
+
+    return ResponseEntity.ok(expedienteService.listarPaginados(
+            nombre,
+            correo,
+            pageable,
+            autenticacion.getName(),
+            obtenerRol(autenticacion)));
+}
+
 
     @GetMapping("/paciente/{pacienteId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")

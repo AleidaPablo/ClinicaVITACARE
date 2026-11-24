@@ -20,6 +20,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -39,42 +40,67 @@ public class CitaService {
         this.eventos = eventos;
     }
 
-    @Transactional(readOnly = true)
-    public Page<CitaResponseDTO> listarPaginadas(
-            Long pacienteId,
-            Long medicoId,
-            String estado,
-            Pageable pageable,
-            String correoUsuario,
-            String rol) {
-        if ("PATIENT".equals(rol)) {
-            pacienteId = pacienteRepository.findByUsuarioEmail(correoUsuario)
-                    .orElseThrow(() -> new RecursoNoEncontradoException(
-                            "No se encontró el perfil de paciente asociado."))
-                    .getId();
-            medicoId = null;
-        } else if ("DOCTOR".equals(rol)) {
-            medicoId = medicoRepository.findByUsuarioEmail(correoUsuario)
-                    .orElseThrow(() -> new RecursoNoEncontradoException(
-                            "No se encontró el perfil médico asociado."))
-                    .getId();
-            pacienteId = null;
-        } else if (!"ADMIN".equals(rol)) {
-            throw new AccessDeniedException("El rol no tiene acceso a las citas.");
-        }
+   @Transactional(readOnly = true)
+public Page<CitaResponseDTO> listarPaginadas(
+        Long pacienteId,
+        Long medicoId,
+        String estado,
+        String fecha,
+        Pageable pageable,
+        String correoUsuario,
+        String rol) {
 
-        Specification<Cita> spec = CitaSpecs.todas();
-        if (pacienteId != null) {
-            spec = spec.and(CitaSpecs.dePaciente(pacienteId));
-        }
-        if (medicoId != null) {
-            spec = spec.and(CitaSpecs.deMedico(medicoId));
-        }
-        if (estado != null && !estado.isBlank() && !estado.equalsIgnoreCase("Todos")) {
-            spec = spec.and(CitaSpecs.conEstado(estado.toUpperCase()));
-        }
-        return citaRepository.findAll(spec, pageable).map(this::convertirADto);
+    Specification<Cita> spec = CitaSpecs.todas();
+
+    if (pacienteId != null) {
+        spec = spec.and(CitaSpecs.dePaciente(pacienteId));
     }
+
+    if (medicoId != null) {
+        spec = spec.and(CitaSpecs.deMedico(medicoId));
+    }
+
+    if (estado != null && !estado.isBlank() && !"Todos".equalsIgnoreCase(estado)) {
+        spec = spec.and(CitaSpecs.conEstado(estado.toUpperCase()));
+    }
+
+    if (fecha != null && !fecha.isBlank()) {
+        LocalDate dia = LocalDate.parse(fecha);
+
+        LocalDateTime inicio = dia.atStartOfDay();
+        LocalDateTime fin = dia.plusDays(1).atStartOfDay();
+
+        spec = spec.and(CitaSpecs.entre(inicio, fin));
+    }
+
+    if ("PATIENT".equals(rol)) {
+        Long pacientePropioId = pacienteRepository
+                .findByUsuarioEmail(correoUsuario)
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "No se encontró el paciente asociado."
+                        ))
+                .getId();
+
+        spec = spec.and(CitaSpecs.dePaciente(pacientePropioId));
+    }
+
+    if ("DOCTOR".equals(rol)) {
+        Long medicoPropioId = medicoRepository
+                .findByUsuarioEmail(correoUsuario)
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "No se encontró el médico asociado."
+                        ))
+                .getId();
+
+        spec = spec.and(CitaSpecs.deMedico(medicoPropioId));
+    }
+
+    return citaRepository
+            .findAll(spec, pageable)
+            .map(this::convertirADto);
+}
 
     @Transactional
     public CitaResponseDTO cambiarEstado(Long id, String nuevoEstado, String correoUsuario, String rol) {

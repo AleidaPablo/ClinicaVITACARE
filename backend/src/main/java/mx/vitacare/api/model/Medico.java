@@ -9,6 +9,15 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Table(name = "medicos")
 public class Medico {
 
+    @ManyToMany(fetch = FetchType.LAZY)
+@JoinTable(
+    name = "medicos_especialidades",
+    joinColumns = @JoinColumn(name = "medico_id"),
+    inverseJoinColumns = @JoinColumn(name = "especialidad_id")
+)
+private java.util.Set<Especialidad> especialidades = new java.util.HashSet<>();
+
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -73,4 +82,12 @@ public class Medico {
 
     public LocalDateTime getActualizadoEn() { return actualizadoEn; }
     public void setActualizadoEn(LocalDateTime actualizadoEn) { this.actualizadoEn = actualizadoEn; }
+
+    public java.util.Set<Especialidad> getEspecialidades() {
+        return especialidades;
+    }
+
+    public void setEspecialidades(java.util.Set<Especialidad> especialidades) {
+        this.especialidades = especialidades;
+    }
 }

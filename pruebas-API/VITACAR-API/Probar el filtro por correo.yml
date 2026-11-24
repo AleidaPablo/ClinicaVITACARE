@@ -1,0 +1,28 @@
+﻿info:
+  name: Probar el filtro por correo
+  type: http
+  seq: 30
+
+http:
+  method: GET
+  url: http://localhost:8080/api/expedientes?correo=correo-real-del-paciente&page=0&size=10
+  params:
+    - name: correo
+      value: correo-real-del-paciente
+      type: query
+    - name: page
+      value: "0"
+      type: query
+    - name: size
+      value: "10"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

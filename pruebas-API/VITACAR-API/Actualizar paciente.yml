@@ -1,0 +1,37 @@
+﻿info:
+  name: Actualizar paciente
+  type: http
+  seq: 18
+
+http:
+  method: PUT
+  url: http://localhost:8080/api/pacientes/24
+  body:
+    type: json
+    data: |-
+      {
+        "nombreCompleto": "zeferino Actualizado",
+        "email": "paciente.bruno.prueba@vitacare.com",
+        "password": "",
+        "telefono": "5512345680",
+        "fechaNacimiento": "1995-08-20",
+        "sexo": "Femenino",
+        "estadoCivil": "Soltero",
+        "ocupacion": "Estudiante",
+        "direccion": "Oaxaca, MÃ©xico",
+        "tipoSangre": "O+",
+        "contactoEmergenciaNombre": "Contacto de prueba",
+        "contactoEmergenciaTelefono": "5512345679",
+        "tipoSeguro": "Privado",
+        "nss": "98765432101"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

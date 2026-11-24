@@ -1,0 +1,25 @@
+info:
+  name: error-acceso sin token
+  type: http
+  seq: 33
+
+http:
+  method: GET
+  url: http://localhost:8080/api/medicos?page=0&size=10
+  params:
+    - name: page
+      value: "0"
+      type: query
+    - name: size
+      value: "10"
+      type: query
+  body:
+    type: json
+    data: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

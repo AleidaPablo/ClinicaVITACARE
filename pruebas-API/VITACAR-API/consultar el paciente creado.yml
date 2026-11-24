@@ -1,0 +1,26 @@
+info:
+  name: consultar el paciente creado
+  type: http
+  seq: 17
+
+http:
+  method: GET
+  url: http://localhost:8080/api/pacientes?page=0&size=20
+  params:
+    - name: page
+      value: "0"
+      type: query
+    - name: size
+      value: "20"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+      
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

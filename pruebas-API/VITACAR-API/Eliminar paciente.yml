@@ -1,0 +1,18 @@
+﻿info:
+  name: Eliminar paciente
+  type: http
+  seq: 19
+
+http:
+  method: DELETE
+  url: http://localhost:8080/api/pacientes/24
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

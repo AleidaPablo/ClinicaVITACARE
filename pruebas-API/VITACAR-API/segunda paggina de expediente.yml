@@ -1,0 +1,25 @@
+﻿info:
+  name: segunda paggina de expediente
+  type: http
+  seq: 32
+
+http:
+  method: GET
+  url: http://localhost:8080/api/expedientes?page=1&size=1
+  params:
+    - name: page
+      value: "1"
+      type: query
+    - name: size
+      value: "1"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

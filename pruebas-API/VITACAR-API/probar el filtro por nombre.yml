@@ -1,0 +1,28 @@
+﻿info:
+  name: probar el filtro por nombre
+  type: http
+  seq: 29
+
+http:
+  method: GET
+  url: http://localhost:8080/api/expedientes?nombre=Paciente&page=0&size=10
+  params:
+    - name: nombre
+      value: Paciente
+      type: query
+    - name: page
+      value: "0"
+      type: query
+    - name: size
+      value: "10"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

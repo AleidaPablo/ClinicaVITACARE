@@ -10,7 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-/** Bitácora de cada correo, SMS o WhatsApp que el sistema intentó enviar. */
+
 @Entity
 @Table(name = "notificaciones")
 public class Notificacion {
@@ -38,7 +38,7 @@ public class Notificacion {
     private String mensaje;
 
     @Column(nullable = false, length = 20)
-    private String estado = "PENDIENTE"; // PENDIENTE, ENVIADO, FALLIDO
+    private String estado = "PENDIENTE"; 
 
     @Column(name = "proveedor_id", length = 100)
     private String proveedorId;

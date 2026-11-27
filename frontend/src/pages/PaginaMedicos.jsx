@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import Icono from '../components/Icono.jsx'
 import ModalFormulario from '../components/ModalFormulario.jsx'
 import axiosClient from '../config/axiosClient'

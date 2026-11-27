@@ -13,12 +13,11 @@ public class Cita {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Muchas citas pueden ser de un mismo paciente
+   
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "paciente_id", nullable = false)
     private Paciente paciente;
 
-    // Muchas citas pueden ser con un mismo médico
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "medico_id", nullable = false)
     private Medico medico;
@@ -36,14 +35,13 @@ public class Cita {
     private Integer duracion = 30;
 
     @Column(length = 50)
-    private String modalidad; // "Presencial" o "Teleconsulta"
+    private String modalidad;
 
     @Column(length = 200)
     private String ubicacion;
 
     @Column(nullable = false, length = 20)
-    private String estado = "PENDIENTE"; // PENDIENTE, CONFIRMADA, COMPLETADA, CANCELADA
-
+    private String estado = "PENDIENTE"; 
     @CreationTimestamp
     @Column(name = "creado_en", updatable = false)
     private LocalDateTime creadoEn;
@@ -52,7 +50,7 @@ public class Cita {
     @Column(name = "actualizado_en")
     private LocalDateTime actualizadoEn;
 
-    // Getters y Setters
+   
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

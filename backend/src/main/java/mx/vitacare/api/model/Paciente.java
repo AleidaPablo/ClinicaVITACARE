@@ -62,7 +62,7 @@ public class Paciente {
     @Column(name = "actualizado_en")
     private LocalDateTime actualizadoEn;
 
-    // Getters y Setters
+    
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

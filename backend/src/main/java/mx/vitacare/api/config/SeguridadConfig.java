@@ -58,7 +58,7 @@ public class SeguridadConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/autenticacion/**", "/error").permitAll()
                         .anyRequest().authenticated())
-                // Sin token o token inválido -> 401; sin permiso -> 403 (ambos en JSON)
+                
                 .exceptionHandling(excepciones -> excepciones
                         .authenticationEntryPoint((solicitud, respuesta, excepcion) ->
                                 escribirError(respuesta, 401, "Unauthorized",

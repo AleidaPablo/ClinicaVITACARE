@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             errores.put(error.getField(), error.getDefaultMessage());
         }
-        return new ResponseEntity<>(errores, HttpStatus.BAD_REQUEST); 
+        return new ResponseEntity<>(errores, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -64,6 +64,7 @@ public class GlobalExceptionHandler {
         }
         return responder(HttpStatus.BAD_REQUEST, mensaje, request);
     }
+
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ErrorResponse> handleDataAccess(DataAccessException ex, HttpServletRequest request) {
         String causa = ex.getMostSpecificCause().getMessage();
@@ -83,6 +84,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
         return responder(HttpStatus.FORBIDDEN, "No tienes permiso para realizar esta acción", request);
     }
+
     @ExceptionHandler(RecursoNoEncontradoException.class)
     public ResponseEntity<ErrorResponse> handleNoEncontrado(RecursoNoEncontradoException ex, HttpServletRequest request) {
         return responder(HttpStatus.NOT_FOUND, ex.getMessage(), request);
@@ -97,11 +99,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleReglaNegocio(ReglaNegocioException ex, HttpServletRequest request) {
         return responder(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }
-
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
-        return responder(HttpStatus.NOT_FOUND, ex.getMessage(), request);
-    }
+    
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, HttpServletRequest request) {

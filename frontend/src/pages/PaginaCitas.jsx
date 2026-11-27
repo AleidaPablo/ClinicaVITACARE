@@ -35,7 +35,7 @@ export default function PaginaCitas() {
 
   const esPaciente = user?.role === 'PATIENT'
 
-  // Carga catálogos de apoyo (médicos y pacientes)
+  
   useEffect(() => {
     let cancel = false
     const cargarCatalogos = async () => {
@@ -351,7 +351,7 @@ export default function PaginaCitas() {
                 <select
                   value={pacienteFiltro}
                   onChange={(e) => {
-                    setPacienteFiltro(e.target.value)
+                    establecerPacienteFiltro(e.target.value)
                     setPaginaActual(0)
                   }}
                 >

@@ -19,13 +19,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-/**
- * Envía correo (JavaMailSender -> Postfix), SMS y WhatsApp (Twilio) y deja
- * constancia de cada intento en la tabla "notificaciones".
- *
- * Un fallo al enviar NUNCA debe romper la operación del usuario: se registra
- * como FALLIDO con el motivo y la aplicación sigue funcionando.
- */
+
 @Service
 public class NotificacionService {
 
@@ -35,7 +29,7 @@ public class NotificacionService {
 
     @FunctionalInterface
     private interface Envio {
-        /** Realiza el envío y devuelve el id del proveedor (o null si no hay). */
+        
         String enviar() throws Exception;
     }
 
@@ -66,6 +60,8 @@ public class NotificacionService {
 
     @Value("${twilio.numero-whatsapp:whatsapp:+14155238886}")
     private String numeroWhatsapp;
+    @Value("${notificaciones.sms.habilitado:true}")
+    private boolean smsHabilitado;
 
     private boolean twilioListo = false;
 
@@ -88,9 +84,6 @@ public class NotificacionService {
         }
     }
 
-    // ------------------------------------------------------------------
-    // Citas: correo + SMS + WhatsApp al paciente
-    // ------------------------------------------------------------------
     public void notificarCita(Long citaId, CitaNotificacionEvento.Tipo tipo) {
         if (!habilitadas) {
             return;
@@ -118,16 +111,16 @@ public class NotificacionService {
             }
 
             enviarCorreo(paciente, asunto, texto, citaId);
-            enviarSms(paciente, texto, citaId);
+            if (smsHabilitado) {
+                 enviarSms(paciente, texto, citaId);
+            }
             enviarWhatsapp(paciente, texto, citaId);
         } catch (Exception ex) {
             log.error("No se pudieron generar las notificaciones de la cita {}", citaId, ex);
         }
     }
 
-    // ------------------------------------------------------------------
-    // Canales (públicos para reutilizarlos, p. ej. en recuperar contraseña)
-    // ------------------------------------------------------------------
+  
     public void enviarCorreo(Usuario usuario, String asunto, String mensaje, Long citaId) {
         if (usuario.getEmail() == null || usuario.getEmail().isBlank()) {
             return;
@@ -175,9 +168,7 @@ public class NotificacionService {
         });
     }
 
-    // ------------------------------------------------------------------
-    // Utilidades internas
-    // ------------------------------------------------------------------
+
     private void exigirTwilio(String numero, String propiedad) {
         if (!twilioListo || numero == null || numero.isBlank()) {
             throw new IllegalStateException("Twilio sin configurar: revisa twilio.account-sid, "
@@ -197,7 +188,7 @@ public class NotificacionService {
         return n;
     }
 
-    /** Guarda como PENDIENTE, intenta enviar y actualiza a ENVIADO o FALLIDO. */
+    
     private void despachar(Notificacion n, Envio envio) {
         notificacionRepository.save(n);
         try {

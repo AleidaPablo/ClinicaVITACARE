@@ -16,7 +16,7 @@ public class PerfilRequestDTO {
     @Size(max = 100, message = "El departamento no puede exceder 100 caracteres")
     private String departamento;
 
-    @Size(max = 300, message = "La URL de la foto no puede exceder 300 caracteres")
+    @Size(message = "La URL de la foto no puede exceder 300 caracteres")
     private String fotoUrl;
 
     private LocalDate fechaNacimiento;

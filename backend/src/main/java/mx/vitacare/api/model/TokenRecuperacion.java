@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Setter
 public class TokenRecuperacion {
 
-    // Constructor vacío requerido por Hibernate
+    
     public TokenRecuperacion() {
     }
 
@@ -26,7 +26,7 @@ public class TokenRecuperacion {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    @Column(name = "token_hash", nullable = false, unique = true, length = 64)
+    @Column(name = "token_hash", nullable = false, unique = true, length = 64, columnDefinition = "CHAR(64)")
     private String tokenHash;
 
     @Column(name = "expira_en", nullable = false)
@@ -39,7 +39,7 @@ public class TokenRecuperacion {
     @Column(name = "creado_en", nullable = false, updatable = false)
     private LocalDateTime creadoEn;
 
-    // Constructor para crear tokens de recuperación
+    
     public TokenRecuperacion(
             Usuario usuario,
             String tokenHash,

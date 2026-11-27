@@ -381,7 +381,7 @@ export default function PaginaPacientes({ patientOnly = false }) {
         )}
       </section>
 
-      {/* MODAL DE DETALLE (Se mantiene igual, solo ajustado al objeto mapeado) */}
+      {/* MODAL DE DETALLE  */}
       {modal?.tipo === 'detalle' && (
         <ModalFormulario
           titulo={modal.paciente.name}
@@ -409,7 +409,7 @@ export default function PaginaPacientes({ patientOnly = false }) {
         </ModalFormulario>
       )}
 
-      {/* MODAL DE FORMULARIO (Ajustado para editar/crear) */}
+      {}
       {(modal?.tipo === 'nuevo' || modal?.tipo === 'editar') && (
         <ModalFormulario
           titulo={modal.tipo === 'nuevo' ? 'Registrar paciente' : 'Editar paciente'}

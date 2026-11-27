@@ -39,7 +39,7 @@ public class Usuario implements UserDetails {
     @Column(length = 100)
     private String departamento;
 
-    @Column(name = "foto_url", length = 300)
+   @Column(name = "foto_url", columnDefinition = "LONGTEXT")
     private String fotoUrl;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -49,6 +49,7 @@ public class Usuario implements UserDetails {
     @Column(name = "ultimo_acceso")
     private LocalDateTime ultimoAcceso;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean activo = true;
 

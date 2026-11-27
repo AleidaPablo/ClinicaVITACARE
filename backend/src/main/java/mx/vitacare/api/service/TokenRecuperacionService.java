@@ -1,11 +1,13 @@
-
 package mx.vitacare.api.service;
 
+import mx.vitacare.api.exception.ReglaNegocioException;
 import mx.vitacare.api.model.TokenRecuperacion;
 import mx.vitacare.api.model.Usuario;
 import mx.vitacare.api.repository.TokenRecuperacionRepository;
 import mx.vitacare.api.repository.UsuarioRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -24,6 +26,8 @@ import java.util.Base64;
 @Service
 public class TokenRecuperacionService {
 
+    private static final Logger log = LoggerFactory.getLogger(TokenRecuperacionService.class);
+
     private final UsuarioRepository usuarioRepository;
     private final TokenRecuperacionRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
@@ -32,8 +36,12 @@ public class TokenRecuperacionService {
     @Value("${app.frontend.url:http://localhost:5174}")
     private String frontendUrl;
 
-    @Value("${spring.mail.username}")
+    @Value("${notificaciones.correo.remitente:no-reply@vitacare.local}")
     private String correoRemitente;
+
+   
+    @Value("${app.recuperacion.mostrar-enlace-en-log:false}")
+    private boolean mostrarEnlaceEnLog;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -55,7 +63,7 @@ public class TokenRecuperacionService {
         Optional<Usuario> usuarioEncontrado =
                 usuarioRepository.findByEmail(email);
 
-        // No revelar si el correo está registrado.
+        
         if (usuarioEncontrado.isEmpty()) {
             return;
         }
@@ -71,7 +79,7 @@ public class TokenRecuperacionService {
 
         String tokenHash = generarHash(token);
 
-tokenRepository.marcarTokensAnterioresComoUsados(usuario.getId());
+        tokenRepository.marcarTokensAnterioresComoUsados(usuario.getId());
 
         TokenRecuperacion nuevoToken = new TokenRecuperacion(
                 usuario,
@@ -82,8 +90,8 @@ tokenRepository.marcarTokensAnterioresComoUsados(usuario.getId());
         tokenRepository.save(nuevoToken);
 
         String enlace = frontendUrl
-        + "/crear-nueva-contrasena?token="
-        + token;
+                + "/crear-nueva-contrasena?token="
+                + token;
 
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setFrom(correoRemitente);
@@ -99,7 +107,16 @@ tokenRepository.marcarTokensAnterioresComoUsados(usuario.getId());
                 + "Equipo VITACARE"
         );
 
-        mailSender.send(mensaje);
+        try {
+            mailSender.send(mensaje);
+        } catch (Exception ex) {
+            
+            log.error("No se pudo enviar el correo de recuperación a {}: {}", usuario.getEmail(), ex.getMessage());
+        }
+
+        if (mostrarEnlaceEnLog) {
+            log.info("[DESARROLLO] Enlace de recuperación para {}: {}", usuario.getEmail(), enlace);
+        }
     }
 
     @Transactional
@@ -114,7 +131,7 @@ tokenRepository.marcarTokensAnterioresComoUsados(usuario.getId());
                         tokenHash,
                         LocalDateTime.now())
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
+                        new ReglaNegocioException(
                                 "El enlace es inválido o ha expirado"));
 
         Usuario usuario = registro.getUsuario();
@@ -128,7 +145,7 @@ tokenRepository.marcarTokensAnterioresComoUsados(usuario.getId());
         );
 
         registro.setUsado(true);
-        tokenRepository.save(registro); 
+        tokenRepository.save(registro);
     }
 
     private String generarHash(String token) {

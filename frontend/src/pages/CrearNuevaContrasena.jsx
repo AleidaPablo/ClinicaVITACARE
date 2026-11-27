@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import axiosClient from '../config/axiosClient'
 
-// Marca de VITACARE
 function MarcaRestablecimiento() {
   return (
     <div className="marca" aria-label="VITACARE">
@@ -20,7 +19,6 @@ function MarcaRestablecimiento() {
   )
 }
 
-// Icono de candado
 function IconoCandado() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -30,7 +28,7 @@ function IconoCandado() {
   )
 }
 
-// Icono para mostrar u ocultar contraseña
+
 function IconoVisibilidad({ visible }) {
   return visible ? (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -45,7 +43,7 @@ function IconoVisibilidad({ visible }) {
   )
 }
 
-// Validación de contraseña
+
 function validarContrasena(valor) {
   if (!valor) {
     return 'Ingresa una contraseña.'

@@ -12,7 +12,7 @@ http:
       
       {
         "email": "admin@vitacare.com",
-        "password": "TU_CONTRASEÑA"
+        "password": "Admin123!"
       }
   auth: inherit
 

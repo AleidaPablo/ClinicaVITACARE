@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import axiosClient from '../config/axiosClient'
 import fotoInicio from '../assets/foto-consulta.png'
 import { validarCorreo } from '../utilidades/validacionesFormulario.js'
 
@@ -29,13 +30,27 @@ export default function RecuperarContrasena() {
   const navigate = useNavigate()
   const [correo, establecerCorreo] = useState('')
   const [errorCorreo, establecerErrorCorreo] = useState('')
+  const [enviando, establecerEnviando] = useState(false)
 
-  function gestionarEnvio(event) {
+  async function gestionarEnvio(event) {
     event.preventDefault()
     const error = validarCorreo(correo)
     establecerErrorCorreo(error)
     if (error) return
-    navigate('/revisa-correo', { state: { correo: correo.trim() } })
+
+    establecerEnviando(true)
+    try {
+      await axiosClient.post('/autenticacion/recuperar-contrasena', { email: correo.trim() })
+      navigate('/revisa-correo', { state: { correo: correo.trim() } })
+    } catch (err) {
+      establecerErrorCorreo(
+        err.response
+          ? err.response.data?.mensaje || err.response.data?.email || 'No se pudo enviar el enlace. Intenta de nuevo.'
+          : 'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.'
+      )
+    } finally {
+      establecerEnviando(false)
+    }
   }
 
   return (
@@ -84,8 +99,8 @@ export default function RecuperarContrasena() {
               {errorCorreo && <p className="error-campo" id="correo-recuperacion-error">{errorCorreo}</p>}
             </div>
 
-            <button className="boton-iniciar" type="submit">
-              Enviar enlace <span aria-hidden="true">→</span>
+            <button className="boton-iniciar" type="submit" disabled={enviando}>
+              {enviando ? 'Enviando…' : <>Enviar enlace <span aria-hidden="true">→</span></>}
             </button>
             <Link className="enlace-regreso-recuperacion" to="/login">
               Volver al inicio de sesión

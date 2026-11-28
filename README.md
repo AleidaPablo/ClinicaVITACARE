@@ -21,12 +21,11 @@
 
 | Recurso | Enlace / Ubicación |
 |---|---|
-| **Servidor / Despliegue en VPS** | `http://178.128.155.105` |
-| **URL base de la API REST** | `http://178.128.155.105/api` *(Local: `http://localhost:8080/api`)* |
+| **Servidor / Despliegue en VPS** | [`https://clinica-vitacare.duckdns.org`](https://clinica-vitacare.duckdns.org) |
 | **Repositorio en GitHub** | [github.com/AleidaPablo/ClinicaVITACARE](https://github.com/AleidaPablo/ClinicaVITACARE.git) |
-| **Prototipo en Figma** | `https://www.figma.com/proto/hg8gvs3T7mGauy7oNG8s1R/Mockup-Clinica?node-id=171-182&t=2aDGGwF0ZnWUZJmp-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=171%3A182&show-proto-sidebar=1` |
+| **Prototipo en Figma** | [Mockup Clínica · Figma](https://www.figma.com/proto/hg8gvs3T7mGauy7oNG8s1R/Mockup-Clinica?node-id=171-182&t=2aDGGwF0ZnWUZJmp-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=171%3A182&show-proto-sidebar=1) |
 | **Tablero GitHub Projects** | [Projects · ClinicaVITACARE](https://github.com/AleidaPablo/ClinicaVITACARE/projects) |
-| **Diagrama Entidad-Relación** | [Ver diagrama Mermaid](#modelo-de-datos) · [Descargar PDF](docs/diagrama-er.pdf) |
+| **Diagrama Entidad-Relación** |[Descargar PDF](docs/Database%20Schema.pdf)|
 
 
 
@@ -43,7 +42,7 @@ El control de acceso se aplica en dos capas: validación estricta en el servidor
 | **PATIENT** *(Paciente)* | Portal personal con acceso aislado exclusivamente a su información: agendamiento y consulta de sus propias citas, revisión de su expediente clínico y edición de su perfil. |
 
 ### Características transversales
-* Autenticación segura mediante correo electrónico y contraseña, autoregistro de pacientes y flujo completo de recuperación y restablecimiento de contraseña.
+* Autenticación segura mediante correo electrónico y contraseña, autorregistro de pacientes y flujo completo de recuperación y restablecimiento de contraseña.
 * Listados optimizados con **paginación y búsqueda en el servidor** (`page`, `size`, `search`).
 * Validaciones en tiempo real debajo de cada campo del formulario, modales de confirmación para acciones críticas, indicadores de estado de carga y diseño responsivo.
 
@@ -60,14 +59,24 @@ El control de acceso se aplica en dos capas: validación estricta en el servidor
 | **DevOps y QA** | VPS Ubuntu (`178.128.155.105`), Nginx (proxy inverso), `systemd`, Certbot (Let's Encrypt), Bruno, Figma, Git & GitHub Projects |
 
 ---
+## Ejecución local y despliegue
 
-##  Arquitectura del sistema
 
-```mermaid
-flowchart LR
-    U[Navegador Web<br/>React + Vite] -->|HTTPS / HTTP + JWT| N[Nginx<br/>Reverse Proxy]
-    N -->|Archivos estáticos| U
-    N -->|/api/*| B[Spring Boot 3.5<br/>API REST]
-    B <-->|JPA + Flyway| D[(MySQL 8)]
-    B -->|SMTP| P[Servidor Correo<br/>Postfix / Gmail]
-    B -->|REST API| T[Twilio<br/>SMS y WhatsApp]
+### 1. Backend (Spring Boot + Maven)
+```bash
+cd backend
+mvn spring-boot:run
+```
+*(Para generar el paquete `.jar` de producción: `mvn clean package -DskipTests`)*
+
+### 2. Frontend (React + Vite)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+*(Para compilar la versión de producción: `npm run build`)*
+
+### 3. Producción en VPS (Ubuntu + Nginx + systemd)
+- La aplicación se expone mediante **Nginx** como proxy inverso con HTTPS en `https://clinica-vitacare.duckdns.org`.
+- El backend se ejecuta en segundo plano como servicio gestionado por **`systemd`** (`vitacare-backend.service`), lo que permite mantenerlo activo y recuperarse automáticamente ante reinicios o cierres inesperados.

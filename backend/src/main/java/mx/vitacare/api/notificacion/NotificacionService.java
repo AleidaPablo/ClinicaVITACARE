@@ -2,6 +2,8 @@ package mx.vitacare.api.notificacion;
 
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
+import com.twilio.rest.verify.v2.service.Verification;
+import com.twilio.rest.verify.v2.service.VerificationCheck;
 import com.twilio.type.PhoneNumber;
 import jakarta.annotation.PostConstruct;
 import mx.vitacare.api.model.Cita;
@@ -19,7 +21,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-
 @Service
 public class NotificacionService {
 
@@ -29,7 +30,6 @@ public class NotificacionService {
 
     @FunctionalInterface
     private interface Envio {
-        
         String enviar() throws Exception;
     }
 
@@ -43,8 +43,11 @@ public class NotificacionService {
     @Value("${notificaciones.correo.remitente:no-reply@vitacare.local}")
     private String remitente;
 
+    @Value("${notificaciones.sms.habilitado:true}")
+    private boolean smsHabilitado;
+
     @Value("${notificaciones.prefijo-telefono:+52}")
-    private String prefijoSms;
+    private String prefijoTelefono;
 
     @Value("${notificaciones.prefijo-whatsapp:+52}")
     private String prefijoWhatsapp;
@@ -58,10 +61,14 @@ public class NotificacionService {
     @Value("${twilio.numero-sms:}")
     private String numeroSms;
 
-    @Value("${twilio.numero-whatsapp:whatsapp:+14155238886}")
+    @Value("${twilio.numero-whatsapp:whatsapp:+17372508034}")
     private String numeroWhatsapp;
-    @Value("${notificaciones.sms.habilitado:true}")
-    private boolean smsHabilitado;
+
+    @Value("${twilio.verify.service-sid:}")
+    private String twilioVerifyServiceSid;
+
+    @Value("${notificaciones.whatsapp.simulado:true}")
+    private boolean whatsappSimulado;
 
     private boolean twilioListo = false;
 
@@ -80,7 +87,7 @@ public class NotificacionService {
             twilioListo = true;
         } else {
             log.warn("Twilio sin configurar (twilio.account-sid / twilio.auth-token): "
-                    + "los SMS y WhatsApp se registrarán como FALLIDO.");
+                    + "los mensajes se registrarán como FALLIDO.");
         }
     }
 
@@ -112,7 +119,7 @@ public class NotificacionService {
 
             enviarCorreo(paciente, asunto, texto, citaId);
             if (smsHabilitado) {
-                 enviarSms(paciente, texto, citaId);
+                enviarSms(paciente, texto, citaId);
             }
             enviarWhatsapp(paciente, texto, citaId);
         } catch (Exception ex) {
@@ -120,7 +127,6 @@ public class NotificacionService {
         }
     }
 
-  
     public void enviarCorreo(Usuario usuario, String asunto, String mensaje, Long citaId) {
         if (usuario.getEmail() == null || usuario.getEmail().isBlank()) {
             return;
@@ -145,12 +151,16 @@ public class NotificacionService {
         if (usuario.getTelefono() == null || usuario.getTelefono().isBlank()) {
             return;
         }
-        String destino = aE164(usuario.getTelefono(), prefijoSms);
+        String destino = aE164(usuario.getTelefono(), prefijoTelefono);
         Notificacion n = nueva(usuario, citaId, CanalNotificacion.SMS, destino, null, mensaje);
         despachar(n, () -> {
             exigirTwilio(numeroSms, "twilio.numero-sms");
-            return Message.creator(new PhoneNumber(destino), new PhoneNumber(numeroSms), mensaje)
-                    .create().getSid();
+            String origen = numeroSms.startsWith("+") ? numeroSms : "+" + numeroSms;
+            return Message.creator(
+                    new PhoneNumber(destino),
+                    new PhoneNumber(origen),
+                    "sms_appointment_reminders"
+            ).create().getSid();
         });
     }
 
@@ -161,6 +171,10 @@ public class NotificacionService {
         String destino = "whatsapp:" + aE164(usuario.getTelefono(), prefijoWhatsapp);
         Notificacion n = nueva(usuario, citaId, CanalNotificacion.WHATSAPP, destino, null, mensaje);
         despachar(n, () -> {
+            if (whatsappSimulado) {
+                log.info("[WHATSAPP SIMULADO] Para {}: {}", destino, mensaje);
+                return "SIMULADO-" + System.currentTimeMillis();
+            }
             exigirTwilio(numeroWhatsapp, "twilio.numero-whatsapp");
             String origen = numeroWhatsapp.startsWith("whatsapp:") ? numeroWhatsapp : "whatsapp:" + numeroWhatsapp;
             return Message.creator(new PhoneNumber(destino), new PhoneNumber(origen), mensaje)
@@ -168,6 +182,44 @@ public class NotificacionService {
         });
     }
 
+    public boolean enviarCodigoRecuperacionSms(Usuario usuario) {
+        if (usuario.getTelefono() == null || usuario.getTelefono().isBlank() || twilioVerifyServiceSid.isBlank()) {
+            return false;
+        }
+        String destino = aE164(usuario.getTelefono(), prefijoTelefono);
+        Notificacion n = nueva(usuario, null, CanalNotificacion.SMS, destino,
+                "Código de recuperación VITACARE", "Código OTP enviado vía Twilio Verify");
+
+        despachar(n, () -> {
+            if (!twilioListo) {
+                throw new IllegalStateException("Twilio sin configurar");
+            }
+            Verification verification = Verification.creator(
+                    twilioVerifyServiceSid,
+                    destino,
+                    "sms"
+            ).create();
+            return verification.getSid();
+        });
+        return "ENVIADO".equals(n.getEstado());
+    }
+
+    public boolean verificarCodigoSms(String telefono, String codigoIngresado) {
+        if (!twilioListo || twilioVerifyServiceSid.isBlank() || telefono == null || codigoIngresado == null) {
+            return false;
+        }
+        try {
+            String destino = aE164(telefono, prefijoTelefono);
+            VerificationCheck check = VerificationCheck.creator(twilioVerifyServiceSid)
+                    .setTo(destino)
+                    .setCode(codigoIngresado.trim())
+                    .create();
+            return "approved".equalsIgnoreCase(check.getStatus());
+        } catch (Exception ex) {
+            log.warn("Error verificando código SMS para {}: {}", telefono, ex.getMessage());
+            return false;
+        }
+    }
 
     private void exigirTwilio(String numero, String propiedad) {
         if (!twilioListo || numero == null || numero.isBlank()) {
@@ -188,7 +240,6 @@ public class NotificacionService {
         return n;
     }
 
-    
     private void despachar(Notificacion n, Envio envio) {
         notificacionRepository.save(n);
         try {

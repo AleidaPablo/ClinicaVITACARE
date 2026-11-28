@@ -8,7 +8,7 @@ import { normalizarDatosFormulario } from '../utilidades/validacionesFormulario.
 import axiosClient from '../config/axiosClient'
 
 const hoy = obtenerFechaLocal()
-const citaVacia = { patientId: '', doctorId: '', date: hoy, time: '09:00', type: 'Consulta general', reason: '', duration: '30', modality: 'Presencial', location: 'Consultorio 1', status: 'Pendiente' }
+const citaVacia = { patientId: '', doctorId: '', date: hoy, time: '09:00', type: 'Consulta general', reason: '', modality: 'Presencial', location: 'Consultorio 1', status: 'Pendiente' }
 const claseEstadoCita = (estado) => ({ Pendiente: 'estado-pendiente', Confirmada: 'estado-confirmado', Completada: 'estado-completada', Cancelada: 'estado-cancelada' })[estado] ?? ''
 
 export default function PaginaCitas() {
@@ -35,7 +35,6 @@ export default function PaginaCitas() {
 
   const esPaciente = user?.role === 'PATIENT'
 
-  
   useEffect(() => {
     let cancel = false
     const cargarCatalogos = async () => {
@@ -118,7 +117,6 @@ export default function PaginaCitas() {
           time: fechaHora.length >= 16 ? fechaHora.slice(11, 16) : '09:00',
           type: c.tipoConsulta || 'Consulta general',
           reason: c.motivo || '',
-          duration: String(c.duracion || 30),
           modality: c.modalidad || 'Presencial',
           location: c.ubicacion || 'Consultorio 1',
           status: estadoMap[estadoMayus] ?? 'Pendiente'
@@ -196,7 +194,7 @@ export default function PaginaCitas() {
       fechaHora: `${datos.date}T${datos.time}:00`,
       tipoConsulta: datos.type || 'Consulta general',
       motivo: datos.reason,
-      duracion: Number(datos.duration || 30),
+      duracion: 30,
       modalidad: datos.modality || 'Presencial',
       ubicacion: datos.location || 'Consultorio 1'
     }
@@ -423,7 +421,6 @@ export default function PaginaCitas() {
               )}
             </div>
 
-            {/* CONTROLES DE PAGINACIÓN */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '0 10px' }}>
               <button
                 className="boton-secundario"
@@ -547,25 +544,16 @@ export default function PaginaCitas() {
                 </select>
               </label>
               <label>
-                Duración (minutos)
-                <select name="duration" defaultValue={formulario.duration || '30'}>
-                  <option value="15">15 minutos</option>
-                  <option value="30">30 minutos</option>
-                  <option value="45">45 minutos</option>
-                  <option value="60">60 minutos</option>
+                Modalidad
+                <select name="modality" defaultValue={formulario.modality || 'Presencial'}>
+                  <option>Presencial</option>
+                  <option>Teleconsulta</option>
                 </select>
               </label>
               <label className="ancho-completo">
                 Motivo
                 <input name="reason" maxLength="120" defaultValue={formulario.reason} onChange={gestionarCambio} aria-invalid={Boolean(errores.reason)} />
                 {errores.reason && <small className="error-campo">{errores.reason}</small>}
-              </label>
-              <label>
-                Modalidad
-                <select name="modality" defaultValue={formulario.modality || 'Presencial'}>
-                  <option>Presencial</option>
-                  <option>Teleconsulta</option>
-                </select>
               </label>
               <label>
                 Consultorio o enlace
@@ -633,7 +621,6 @@ export default function PaginaCitas() {
             <div><span>Tipo de consulta</span><strong>{formulario.type || 'Consulta general'}</strong></div>
             <div><span>Modalidad</span><strong>{formulario.modality || 'Presencial'}</strong></div>
             <div><span>Motivo</span><strong>{formulario.reason}</strong></div>
-            <div><span>Duración</span><strong>{formulario.duration || '30'} minutos</strong></div>
             <div><span>Consultorio</span><strong>{formulario.location || 'Por asignar'}</strong></div>
             <div><span>Estado</span><strong>{formulario.status}</strong></div>
           </div>

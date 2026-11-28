@@ -3,6 +3,7 @@ package mx.vitacare.api.service;
 import mx.vitacare.api.exception.ReglaNegocioException;
 import mx.vitacare.api.model.TokenRecuperacion;
 import mx.vitacare.api.model.Usuario;
+import mx.vitacare.api.notificacion.NotificacionService;
 import mx.vitacare.api.repository.TokenRecuperacionRepository;
 import mx.vitacare.api.repository.UsuarioRepository;
 
@@ -19,9 +20,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
-import java.util.Base64;
 
 @Service
 public class TokenRecuperacionService {
@@ -32,6 +33,7 @@ public class TokenRecuperacionService {
     private final TokenRecuperacionRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
+    private final NotificacionService notificacionService;
 
     @Value("${app.frontend.url:http://localhost:5174}")
     private String frontendUrl;
@@ -39,7 +41,6 @@ public class TokenRecuperacionService {
     @Value("${notificaciones.correo.remitente:no-reply@vitacare.local}")
     private String correoRemitente;
 
-   
     @Value("${app.recuperacion.mostrar-enlace-en-log:false}")
     private boolean mostrarEnlaceEnLog;
 
@@ -49,21 +50,19 @@ public class TokenRecuperacionService {
             UsuarioRepository usuarioRepository,
             TokenRecuperacionRepository tokenRepository,
             PasswordEncoder passwordEncoder,
-            JavaMailSender mailSender) {
+            JavaMailSender mailSender,
+            NotificacionService notificacionService) {
 
         this.usuarioRepository = usuarioRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
+        this.notificacionService = notificacionService;
     }
 
     @Transactional
     public void solicitarRecuperacion(String email) {
-
-        Optional<Usuario> usuarioEncontrado =
-                usuarioRepository.findByEmail(email);
-
-        
+        Optional<Usuario> usuarioEncontrado = usuarioRepository.findByEmail(email);
         if (usuarioEncontrado.isEmpty()) {
             return;
         }
@@ -89,9 +88,7 @@ public class TokenRecuperacionService {
 
         tokenRepository.save(nuevoToken);
 
-        String enlace = frontendUrl
-                + "/crear-nueva-contrasena?token="
-                + token;
+        String enlace = frontendUrl + "/crear-nueva-contrasena?token=" + token;
 
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setFrom(correoRemitente);
@@ -110,7 +107,6 @@ public class TokenRecuperacionService {
         try {
             mailSender.send(mensaje);
         } catch (Exception ex) {
-            
             log.error("No se pudo enviar el correo de recuperación a {}: {}", usuario.getEmail(), ex.getMessage());
         }
 
@@ -120,48 +116,65 @@ public class TokenRecuperacionService {
     }
 
     @Transactional
-    public void restablecerContrasena(
-            String token,
-            String nuevaContrasena) {
-
+    public void restablecerContrasena(String token, String nuevaContrasena) {
         String tokenHash = generarHash(token);
 
         TokenRecuperacion registro = tokenRepository
-                .findByTokenHashAndUsadoFalseAndExpiraEnAfter(
-                        tokenHash,
-                        LocalDateTime.now())
-                .orElseThrow(() ->
-                        new ReglaNegocioException(
-                                "El enlace es inválido o ha expirado"));
+                .findByTokenHashAndUsadoFalseAndExpiraEnAfter(tokenHash, LocalDateTime.now())
+                .orElseThrow(() -> new ReglaNegocioException("El enlace es inválido o ha expirado"));
 
         Usuario usuario = registro.getUsuario();
+        String contrasenaEncriptada = passwordEncoder.encode(nuevaContrasena);
 
-        String contrasenaEncriptada =
-                passwordEncoder.encode(nuevaContrasena);
-
-        usuarioRepository.actualizarContrasena(
-                usuario.getId(),
-                contrasenaEncriptada
-        );
+        usuarioRepository.actualizarContrasena(usuario.getId(), contrasenaEncriptada);
 
         registro.setUsado(true);
         tokenRepository.save(registro);
     }
 
+    @Transactional
+    public void solicitarRecuperacionSms(String email) {
+        Optional<Usuario> usuarioEncontrado = usuarioRepository.findByEmail(email);
+        if (usuarioEncontrado.isEmpty()) {
+            return;
+        }
+
+        Usuario usuario = usuarioEncontrado.get();
+        if (usuario.getTelefono() == null || usuario.getTelefono().isBlank()) {
+            throw new ReglaNegocioException("El usuario no tiene un teléfono registrado para recibir SMS");
+        }
+
+        boolean enviado = notificacionService.enviarCodigoRecuperacionSms(usuario);
+        if (!enviado) {
+            throw new ReglaNegocioException("No se pudo enviar el código SMS en este momento");
+        }
+    }
+
+    @Transactional
+    public void restablecerContrasenaSms(String email, String codigo, String nuevaContrasena) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new ReglaNegocioException("Usuario no encontrado"));
+
+        if (usuario.getTelefono() == null || usuario.getTelefono().isBlank()) {
+            throw new ReglaNegocioException("El usuario no tiene un teléfono registrado");
+        }
+
+        boolean valido = notificacionService.verificarCodigoSms(usuario.getTelefono(), codigo);
+        if (!valido) {
+            throw new ReglaNegocioException("El código SMS es incorrecto o ha expirado");
+        }
+
+        String contrasenaEncriptada = passwordEncoder.encode(nuevaContrasena);
+        usuarioRepository.actualizarContrasena(usuario.getId(), contrasenaEncriptada);
+    }
+
     private String generarHash(String token) {
-
         try {
-            MessageDigest digest =
-                    MessageDigest.getInstance("SHA-256");
-
-            byte[] hash = digest.digest(
-                    token.getBytes(StandardCharsets.UTF_8));
-
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hash);
-
         } catch (Exception e) {
-            throw new IllegalStateException(
-                    "No se pudo generar el hash del token", e);
+            throw new IllegalStateException("No se pudo generar el hash del token", e);
         }
     }
 }
